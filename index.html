@@ -320,6 +320,12 @@
         const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
         const TMDB_ORIGINAL_IMAGE = "https://image.tmdb.org/t/p/original";
         
+        const MODELS_TO_TRY = [
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash"
+        ];
+        
         let currentLoaderInterval;
         let movieDataStore = {}; // Глобальне сховище для фільмів
         window.currentSimilarMovies = []; // Сховище для схожих фільмів
@@ -563,85 +569,70 @@
             }
         }
 
-        async function fetchWithRetry(url, options, maxRetries = 5) {
+        async function fetchWithRetry(url, options, maxRetries = 3) {
             let delay = 1000;
             for (let i = 0; i < maxRetries; i++) {
                 try {
                     const response = await fetch(url, options);
                     if (response.ok || [400, 403, 404].includes(response.status)) return response; 
-                    if (i === maxRetries - 1) return response;
-                } catch (err) { if (i === maxRetries - 1) throw err; }
-                await new Promise(resolve => setTimeout(resolve, delay)); delay *= 2;
+                    if (response.status === 503 || response.status === 429) {
+                        if (i < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2;
+                            continue;
+                        }
+                    }
+                    return response;
+                } catch (err) {
+                    if (i === maxRetries - 1) throw err;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
             }
         }
 
-        async function callGemini(prompt, systemPrompt = "", isJson = true) {
-            if (!CURRENT_API_KEY) {
+        async function callGemini(prompt, systemPrompt = "") {
+            if (!CURRENT_API_KEY || !CURRENT_API_KEY.startsWith('AIza')) {
                 apiModal.classList.remove('hidden');
-                throw new Error("Немає API ключа");
+                throw new Error("Недійсний API ключ. Будь ласка, введіть правильний ключ.");
             }
             
-            // Використовуємо найбільш стабільні моделі (нові можуть бути недоступні для нових API ключів)
-            const models = [
-                "gemini-1.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash-latest",
-                "gemini-pro"
-            ];
-            
-            let lastErrorDetail = "Невідома помилка";
+            let lastErrorMsg = "";
+            let allNotFound = true;
 
-            for (const model of models) {
+            for (const model of MODELS_TO_TRY) {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${CURRENT_API_KEY}`;
-                
-                const bodyData = { contents: [{ parts: [{ text: prompt }] }] };
-                
-                // gemini-pro (1.0) не підтримує systemInstruction та JSON форматування
-                if (model.includes("1.5") || model.includes("2.0")) {
-                    if (systemPrompt) bodyData.systemInstruction = { parts: [{ text: systemPrompt }] };
-                    if (isJson) bodyData.generationConfig = { responseMimeType: "application/json" };
-                } else if (systemPrompt) {
-                    bodyData.contents[0].parts[0].text = `System: ${systemPrompt}\n\nUser: ${prompt}`;
-                }
-
                 try {
-                    const response = await fetchWithRetry(url, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify(bodyData) 
+                    const response = await fetchWithRetry(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] }
+                        })
                     });
                     
-                    if (response.ok) { 
-                        const data = await response.json(); 
-                        return data.candidates?.[0]?.content?.parts?.[0]?.text; 
-                    }
-                    
-                    // Отримуємо точну причину помилки від Google API
-                    const errorData = await response.json().catch(() => ({}));
-                    const googleErrorMsg = errorData.error?.message || `HTTP ${response.status}`;
-                    lastErrorDetail = `${model}: ${googleErrorMsg}`;
-                    
-                    // 1. Помилка валідності ключа (скидаємо ключ ТІЛЬКИ якщо він дійсно невірний)
-                    if (response.status === 400 || (response.status === 403 && googleErrorMsg.toLowerCase().includes("key"))) {
-                        resetApiKey();
-                        throw new Error(`Недійсний API ключ. Будь ласка, введіть правильний.`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.candidates?.[0]?.content?.parts?.[0]?.text;
                     }
 
-                    // 2. Помилка квот і лімітів (Google просить почекати)
-                    if (response.status === 429 || googleErrorMsg.toLowerCase().includes("quota")) {
-                        throw new Error(`⏳ Зірки трохи втомилися від запитів (вичерпано ліміт API). Будь ласка, зачекайте хвилинку і спробуйте знову!`);
+                    if (response.status !== 404) {
+                        allNotFound = false; 
                     }
-                    
-                    // 3. Якщо модель просто не знайдена (404) або заблокована для акаунту (403) - йдемо до наступної моделі
-                    if (response.status !== 404 && response.status !== 403) {
-                        break; 
-                    }
-                } catch (err) {
-                    if (err.message.includes("API ключ") || err.message.includes("ліміт API")) throw err;
-                    lastErrorDetail = err.message;
+
+                } catch (err) { 
+                    lastErrorMsg = err.message; 
+                    if (!err.message.includes("404")) allNotFound = false;
                 }
             }
-            throw new Error(`Моделі тимчасово недоступні. Деталі: ${lastErrorDetail}`);
+
+            if (allNotFound) {
+                resetApiKey(); 
+                throw new Error("Ваш API ключ було заблоковано сервером Google. Створіть новий ключ у Google AI Studio.");
+            }
+
+            throw new Error("Жодна модель не відповіла. " + lastErrorMsg);
         }
 
         function createSkeletonCard() {
