@@ -2,8 +2,16 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Вечір кіно в Ані</title>
+    
+    <!-- PWA Meta Tags для iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Вечір кіно">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/180x180/f472b6/ffffff?text=%E2%9D%A4%EF%B8%8F">
+    <meta name="theme-color" content="#0f172a">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Dancing+Script:wght@600&display=swap');
@@ -12,6 +20,7 @@
             font-family: 'Inter', sans-serif;
             background: #0f172a;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .bg-glow {
@@ -52,11 +61,17 @@
             background: rgba(15, 23, 42, 0.8);
         }
 
-        .movie-card:hover {
-            transform: translateY(-8px) scale(1.03);
-            box-shadow: 0 25px 30px -5px rgba(168, 85, 247, 0.3);
-            border-color: rgba(168, 85, 247, 0.5);
-            z-index: 10;
+        @media (hover: hover) {
+            .movie-card:hover {
+                transform: translateY(-8px) scale(1.03);
+                box-shadow: 0 25px 30px -5px rgba(168, 85, 247, 0.3);
+                border-color: rgba(168, 85, 247, 0.5);
+                z-index: 10;
+            }
+        }
+
+        .movie-card:active {
+            transform: scale(0.98);
         }
 
         .custom-loader {
@@ -89,8 +104,8 @@
 
         input[type="range"]::-webkit-slider-thumb {
             pointer-events: all;
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             -webkit-appearance: none;
             background-color: #f472b6;
             border-radius: 50%;
@@ -100,7 +115,7 @@
             position: relative;
         }
         
-        input[type="range"]::-webkit-slider-thumb:hover {
+        input[type="range"]::-webkit-slider-thumb:active {
             transform: scale(1.1);
             background-color: #f9a8d4;
         }
@@ -118,7 +133,33 @@
             background: rgba(15, 23, 42, 0.85);
         }
 
-        /* Анімації пасхалки */
+        /* --- Анімації пасхалки (Філіп) --- */
+        .frenchie-anim {
+            position: fixed; top: 0; left: 0; z-index: 9999;
+            pointer-events: none; will-change: transform, opacity;
+            user-select: none; -webkit-user-drag: none;
+            filter: drop-shadow(0 15px 15px rgba(0,0,0,0.4));
+        }
+
+        @keyframes frenchieRain {
+            0% { transform: translate3d(var(--startX), -20vh, 0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translate3d(var(--endX), 120vh, 0) rotate(var(--rot)); opacity: 0; }
+        }
+
+        @keyframes frenchieFountain {
+            0% { transform: translate3d(50vw, 110vh, 0) scale(0.5) rotate(0deg); opacity: 1; }
+            40% { transform: translate3d(var(--midX), var(--midY), 0) scale(1.3) rotate(var(--rotMid)); opacity: 1; }
+            100% { transform: translate3d(var(--endX), 120vh, 0) scale(1) rotate(var(--rotEnd)); opacity: 0; }
+        }
+
+        @keyframes frenchieSideThrow {
+            0% { transform: translate3d(var(--startX), var(--startY), 0) rotate(0deg) scale(0.8); opacity: 1; }
+            40% { transform: translate3d(50vw, var(--midY), 0) rotate(var(--rotMid)) scale(1.4); opacity: 1; }
+            100% { transform: translate3d(var(--endX), 120vh, 0) rotate(var(--rotEnd)) scale(1); opacity: 0; }
+        }
+
         @keyframes frenchieZoomIn {
             0% { transform: translate(-50%, -50%) scale(0) rotate(-20deg); opacity: 0; }
             30% { transform: translate(-50%, -50%) scale(1.1) rotate(5deg); opacity: 1; }
@@ -137,6 +178,7 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
 
+        /* --- UI Елементи --- */
         .skeleton-card {
             background: rgba(30, 41, 59, 0.7);
             border-radius: 1.5rem;
@@ -182,22 +224,23 @@
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(244, 114, 182, 0.5); }
     </style>
 </head>
-<body class="text-gray-200 min-h-screen flex flex-col">
+<body class="text-gray-200 min-h-[100dvh] flex flex-col">
 
     <div class="bg-glow"></div>
     <div id="hearts-container"></div>
 
-    <!-- API Key Modal (Для публікації) -->
+    <!-- API Key Modal -->
     <div id="apiModal" class="fixed inset-0 z-[150] flex items-center justify-center p-4 hidden">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-xl"></div>
         <div class="bg-slate-900 border border-pink-500/30 p-8 rounded-[2.5rem] max-w-md w-full shadow-2xl relative z-10">
             <h2 class="text-2xl font-bold gradient-text mb-4 text-center">Налаштування ✨</h2>
             <p class="text-slate-400 text-sm mb-6 text-center">Щоб магія працювала, будь ласка, додайте свій Gemini API Key. Він зберігатиметься тільки локально у вашому браузері.</p>
-            <input type="password" id="apiInput" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-pink-400 outline-none mb-4 placeholder-slate-600" placeholder="Вставте API Key (AIza...)">
+            <!-- Збільшений розмір шрифту (text-base) для запобігання зуму в iOS -->
+            <input type="password" id="apiInput" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-base text-white focus:ring-2 focus:ring-pink-400 outline-none mb-4 placeholder-slate-600" placeholder="Вставте API Key (AIza...)">
             <div class="text-center mb-4">
                 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-pink-400 hover:text-pink-300 hover:underline text-xs transition-colors">Отримати безкоштовний ключ 🔑</a>
             </div>
-            <button id="saveApiKey" class="w-full bg-gradient-to-r from-indigo-500 to-pink-500 py-4 rounded-2xl font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-pink-500/20 text-white">Зберегти та почати</button>
+            <button id="saveApiKey" class="w-full bg-gradient-to-r from-indigo-500 to-pink-500 py-4 rounded-2xl font-bold hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-pink-500/20 text-white">Зберегти та почати</button>
             <p id="apiErrorMsg" class="text-red-400 text-xs text-center mt-3 hidden"></p>
         </div>
     </div>
@@ -206,7 +249,7 @@
     <div id="favoritesPanel" class="fixed top-0 right-0 h-full w-full sm:w-96 border-l border-white/10 z-[110] transform translate-x-full transition-transform duration-500 flex flex-col shadow-2xl">
         <div class="p-6 border-b border-white/10 flex justify-between items-center">
             <h2 class="text-2xl font-bold gradient-text">Збережене ❤️</h2>
-            <button onclick="toggleFavoritesPanel()" aria-label="Закрити панель" class="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/5 transition">✕</button>
+            <button onclick="toggleFavoritesPanel()" aria-label="Закрити панель" class="text-slate-400 hover:text-white active:scale-90 p-2 rounded-full hover:bg-white/5 transition">✕</button>
         </div>
         <div id="favoritesList" class="flex-grow p-6 overflow-y-auto flex flex-col gap-4"></div>
     </div>
@@ -222,7 +265,7 @@
 
     <!-- МОДАЛКА ДЛЯ ВІДЕОПЛЕЄРА (Trailer) -->
     <div id="videoModal" class="fixed inset-0 z-[130] hidden items-center justify-center p-4 bg-black/95 opacity-0 transition-opacity duration-300">
-        <button onclick="closeVideoModal()" class="absolute top-4 right-4 md:top-8 md:right-8 text-white/50 hover:text-white text-5xl transition-colors">&times;</button>
+        <button onclick="closeVideoModal()" class="absolute top-4 right-4 md:top-8 md:right-8 text-white/50 hover:text-white active:scale-90 text-5xl transition-all">&times;</button>
         <div class="w-full max-w-6xl aspect-video rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/10">
             <iframe id="videoIframe" class="w-full h-full" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
         </div>
@@ -230,19 +273,19 @@
 
     <header id="mainHeader" class="bg-slate-900/40 backdrop-blur-xl border-b border-white/5 p-6 sticky top-0 z-40 transition-all duration-300">
         <div class="max-w-7xl mx-auto flex justify-between items-center relative">
-            <button id="changeApiBtnHeader" onclick="resetApiKey()" class="text-[10px] text-slate-500 hover:text-pink-400 uppercase tracking-widest border border-white/5 px-3 py-2 rounded-full transition-all hover:bg-white/5 hidden md:block absolute left-0 z-10">🔑 Змінити API</button>
+            <button id="changeApiBtnHeader" onclick="resetApiKey()" class="text-[10px] text-slate-500 hover:text-pink-400 active:scale-95 uppercase tracking-widest border border-white/5 px-3 py-2 rounded-full transition-all hover:bg-white/5 hidden md:block absolute left-0 z-10">🔑 Змінити API</button>
             <div class="text-center flex-grow">
                 <h1 class="text-3xl md:text-5xl font-bold gradient-text mb-1 transition-all duration-300">Вечір кіно в Ані</h1>
                 <p class="text-pink-200/60 text-[10px] md:text-xs uppercase tracking-[0.3em] font-light">Магія кіно, створена спеціально для тебе ❤️</p>
             </div>
-            <button onclick="toggleFavoritesPanel()" class="group flex items-center gap-2 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/30 px-4 py-2 rounded-full transition-all absolute right-0">
+            <button onclick="toggleFavoritesPanel()" class="group flex items-center gap-2 bg-pink-500/10 hover:bg-pink-500/20 active:scale-95 border border-pink-500/30 px-4 py-2 rounded-full transition-all absolute right-0">
                 <span class="text-pink-400 group-hover:scale-110 transition-transform">❤️</span>
                 <span id="favCount" class="text-sm font-bold text-pink-200">0</span>
             </button>
         </div>
     </header>
 
-    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-8">
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-8 flex flex-col">
         <section class="bg-slate-900/40 border border-white/10 rounded-[2rem] p-6 md:p-12 shadow-2xl backdrop-blur-md mb-16 relative">
             <form id="searchForm" class="space-y-10">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -265,7 +308,7 @@
                             <label class="text-sm font-medium text-pink-100/70 uppercase tracking-wider">Настрій / Жанр</label>
                             <span id="genreMemory" class="text-[10px] text-pink-400/80 italic hidden"></span>
                         </div>
-                        <select id="genreSelect" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:ring-2 focus:ring-pink-400 outline-none cursor-pointer transition-all hover:bg-white/10">
+                        <select id="genreSelect" class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-base text-white focus:ring-2 focus:ring-pink-400 outline-none cursor-pointer transition-all hover:bg-white/10">
                             <option value="" class="bg-slate-900">Будь-який настрій</option>
                             <option value="Комедія" class="bg-slate-900">Комедія 🍿</option>
                             <option value="Драма" class="bg-slate-900">Драма 🎭</option>
@@ -283,13 +326,13 @@
                 <div class="space-y-3 relative">
                     <div class="flex justify-between items-end mb-1 ml-1">
                         <label class="text-sm font-medium text-pink-100/70 uppercase tracking-wider">Що сьогодні на серці? ✨</label>
-                        <button type="button" onclick="feelLucky()" class="text-[11px] text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-1.5 rounded-full border border-indigo-500/20 transition flex items-center gap-1">
+                        <button type="button" onclick="feelLucky()" class="text-[11px] text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 active:scale-95 px-3 py-1.5 rounded-full border border-indigo-500/20 transition flex items-center gap-1">
                             <span>✨</span> Випадкова ідея
                         </button>
                     </div>
                     <div class="relative">
-                        <textarea id="promptInput" rows="3" class="w-full bg-white/5 border border-white/10 rounded-3xl px-6 py-5 pr-12 text-white focus:ring-2 focus:ring-pink-400 outline-none placeholder-slate-500 text-lg transition-all hover:bg-white/10" placeholder="Наприклад: Щось затишне для вечора..."></textarea>
-                        <button type="button" onclick="document.getElementById('promptInput').value = ''; document.getElementById('promptInput').focus();" aria-label="Очистити запит" class="absolute top-4 right-4 text-slate-500 hover:text-pink-400 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" title="Очистити запит">✕</button>
+                        <textarea id="promptInput" rows="3" class="w-full bg-white/5 border border-white/10 rounded-3xl px-6 py-5 pr-12 text-base md:text-lg text-white focus:ring-2 focus:ring-pink-400 outline-none placeholder-slate-500 transition-all hover:bg-white/10" placeholder="Наприклад: Щось затишне для вечора..."></textarea>
+                        <button type="button" onclick="document.getElementById('promptInput').value = ''; document.getElementById('promptInput').focus();" aria-label="Очистити запит" class="absolute top-4 right-4 text-slate-500 hover:text-pink-400 active:scale-90 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" title="Очистити запит">✕</button>
                     </div>
                 </div>
 
@@ -304,7 +347,7 @@
             <p id="loaderText" class="text-xl text-pink-200/80 font-medium animate-pulse italic text-center px-4">Спілкуюсь із зірками та шукаю найкращі варіанти...</p>
         </div>
 
-        <div id="resultsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8"></div>
+        <div id="resultsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8 flex-grow"></div>
     </main>
 
     <footer class="p-10 text-center text-slate-500 text-sm border-t border-white/5 mt-10">
@@ -314,7 +357,7 @@
     <div id="toastContainer"></div>
 
     <script>
-        // API Конфігурація
+        // --- API Конфігурація ---
         let CURRENT_API_KEY = localStorage.getItem('gemini_api_key') || "";
         const TMDB_KEY = "3a61a409418b83fcb020683e206ae889";
         const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
@@ -328,9 +371,9 @@
         
         let currentLoaderInterval;
         let movieDataStore = {}; // Глобальне сховище для фільмів
-        window.currentSimilarMovies = []; // Сховище для схожих фільмів
+        window.currentSimilarMovies = []; 
 
-        // Управління ключами API
+        // --- Управління ключами API ---
         const apiModal = document.getElementById('apiModal');
         const changeApiBtnHeader = document.getElementById('changeApiBtnHeader');
         
@@ -390,7 +433,7 @@
             
             if (onUndo) {
                 const undoBtn = document.createElement('button');
-                undoBtn.className = 'text-pink-400 font-bold text-xs uppercase tracking-wider hover:text-pink-300 ml-2 py-1 px-2 rounded hover:bg-pink-500/10 transition';
+                undoBtn.className = 'text-pink-400 font-bold text-xs uppercase tracking-wider hover:text-pink-300 ml-2 py-1 px-2 rounded hover:bg-pink-500/10 active:scale-95 transition';
                 undoBtn.textContent = 'Скасувати';
                 undoBtn.onclick = () => { onUndo(); toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); };
                 toast.appendChild(undoBtn);
@@ -439,13 +482,13 @@
             list.innerHTML = favorites.map(m => {
                 const identifier = m.id || m.imdbID;
                 return `
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-4 relative group cursor-pointer hover:bg-white/10 transition" onclick="openMovieModal(${m.id})">
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-4 relative group cursor-pointer hover:bg-white/10 active:scale-[0.98] transition" onclick="openMovieModal(${m.id})">
                     <img src="${m.poster}" class="w-16 h-24 object-cover rounded-lg opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')">
                     <div class="flex-grow">
                         <h3 class="font-bold text-sm text-white mb-1 leading-tight">${m.title_ua}</h3>
                         <p class="text-xs text-slate-400 mb-2">${m.year}</p>
                     </div>
-                    <button onclick="event.stopPropagation(); removeFavorite('${identifier}')" aria-label="Видалити" class="absolute top-2 right-2 text-slate-500 hover:text-red-400 p-2 opacity-0 group-hover:opacity-100 transition">✕</button>
+                    <button onclick="event.stopPropagation(); removeFavorite('${identifier}')" aria-label="Видалити" class="absolute top-2 right-2 text-slate-500 hover:text-red-400 active:scale-90 p-2 opacity-0 group-hover:opacity-100 transition">✕</button>
                 </div>
             `}).join('');
         }
@@ -591,7 +634,8 @@
             }
         }
 
-        async function callGemini(prompt, systemPrompt = "") {
+        // --- Вдосконалений API Gemini із підтримкою JSON Format ---
+        async function callGemini(prompt, systemPrompt = "", isJson = true) {
             if (!CURRENT_API_KEY || !CURRENT_API_KEY.startsWith('AIza')) {
                 apiModal.classList.remove('hidden');
                 throw new Error("Недійсний API ключ. Будь ласка, введіть правильний ключ.");
@@ -603,13 +647,19 @@
             for (const model of MODELS_TO_TRY) {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${CURRENT_API_KEY}`;
                 try {
+                    const bodyData = { contents: [{ parts: [{ text: prompt }] }] };
+                    if (systemPrompt) {
+                        bodyData.systemInstruction = { parts: [{ text: systemPrompt }] };
+                    }
+                    if (isJson) {
+                        // Офіційний і надійний JSON MIME type від Google
+                        bodyData.generationConfig = { responseMimeType: "application/json" };
+                    }
+
                     const response = await fetchWithRetry(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            systemInstruction: { parts: [{ text: systemPrompt }] }
-                        })
+                        body: JSON.stringify(bodyData)
                     });
                     
                     if (response.ok) {
@@ -619,8 +669,8 @@
 
                     if (response.status !== 404) {
                         allNotFound = false; 
+                        lastErrorMsg = `HTTP Error ${response.status}`;
                     }
-
                 } catch (err) { 
                     lastErrorMsg = err.message; 
                     if (!err.message.includes("404")) allNotFound = false;
@@ -635,6 +685,74 @@
             throw new Error("Жодна модель не відповіла. " + lastErrorMsg);
         }
 
+        // --- Пасхалка Філіп ---
+        function triggerFrenchieEasterEgg() {
+            const animTypes = ['rain', 'fountain', 'throw'];
+            const numberOfDogs = 40; 
+            
+            for (let i = 0; i < numberOfDogs; i++) {
+                const el = document.createElement('img');
+                // Використовуємо універсальну cute dog gif замість локальних файлів
+                el.src = 'https://media1.tenor.com/m/Zp94s-z-jK0AAAAC/dog-cute.gif'; 
+                el.className = 'frenchie-anim rounded-full';
+                
+                const size = (Math.random() * 50 + 40) + 'px'; 
+                el.style.width = size;
+                el.style.height = size;
+                el.style.objectFit = 'cover';
+
+                const animType = animTypes[Math.floor(Math.random() * animTypes.length)];
+                const rotMid = (Math.random() * 360 - 180) + 'deg';
+                const rotEnd = (Math.random() * 720 - 360) + 'deg';
+                const animDuration = (Math.random() * 3 + 3); 
+                const animDelay = (Math.random() * 5); 
+                
+                if (animType === 'rain') {
+                    const startX = (Math.random() * 100) + 'vw';
+                    const endX = `calc(${startX} + ${(Math.random() * 20 - 10)}vw)`;
+                    el.style.setProperty('--startX', startX);
+                    el.style.setProperty('--endX', endX);
+                    el.style.setProperty('--rot', rotEnd);
+                    el.style.animation = `frenchieRain ${animDuration}s ease-in both ${animDelay}s`;
+                } else if (animType === 'fountain') {
+                    const midX = (Math.random() * 100) + 'vw';
+                    const endX = (Math.random() * 120 - 10) + 'vw';
+                    const midY = (Math.random() * 50 + 10) + 'vh'; 
+                    el.style.setProperty('--midX', midX);
+                    el.style.setProperty('--endX', endX);
+                    el.style.setProperty('--midY', midY);
+                    el.style.setProperty('--rotMid', rotMid);
+                    el.style.setProperty('--rotEnd', rotEnd);
+                    el.style.animation = `frenchieFountain ${animDuration}s ease-out both ${animDelay}s`;
+                } else if (animType === 'throw') {
+                    const fromLeft = Math.random() > 0.5;
+                    const startX = fromLeft ? '-20vw' : '120vw';
+                    const endX = fromLeft ? '120vw' : '-20vw';
+                    const startY = (Math.random() * 60 + 20) + 'vh';
+                    const midY = (Math.random() * 30 - 10) + 'vh'; 
+                    el.style.setProperty('--startX', startX);
+                    el.style.setProperty('--endX', endX);
+                    el.style.setProperty('--startY', startY);
+                    el.style.setProperty('--midY', midY);
+                    el.style.setProperty('--rotMid', rotMid);
+                    el.style.setProperty('--rotEnd', rotEnd);
+                    el.style.animation = `frenchieSideThrow ${animDuration}s ease-in-out both ${animDelay}s`;
+                }
+
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 10000);
+            }
+
+            setTimeout(() => {
+                const finalImg = document.createElement('img');
+                finalImg.src = 'https://media1.tenor.com/m/Zp94s-z-jK0AAAAC/dog-cute.gif';
+                finalImg.className = 'final-frenchie shadow-2xl rounded-3xl';
+                finalImg.onerror = function() { this.remove(); };
+                document.body.appendChild(finalImg);
+                setTimeout(() => finalImg.remove(), 3500);
+            }, 6000);
+        }
+
         function createSkeletonCard() {
             return `<div class="skeleton-card animate-pulse"><div class="w-full h-full bg-white/5"></div></div>`;
         }
@@ -644,7 +762,7 @@
             const heartIcon = isFav ? "❤️" : "🤍";
             return `
                 <div class="movie-card border border-white/5 rounded-[1.5rem] overflow-hidden flex flex-col h-full animate-in fade-in zoom-in-95 duration-500 relative cursor-pointer group aspect-[2/3]" style="animation-delay: ${index * 80}ms" onclick="openMovieModal(${id})">
-                    <button id="fav-btn-${id}" onclick="event.stopPropagation(); toggleFavorite(this, '${movieDataForStorage}')" class="absolute top-3 left-3 z-20 text-xl ${heartClass} hover:scale-110 hover:text-pink-400 transition-all filter drop-shadow-lg bg-black/40 rounded-full w-9 h-9 flex items-center justify-center backdrop-blur-md border border-white/10">${heartIcon}</button>
+                    <button id="fav-btn-${id}" onclick="event.stopPropagation(); toggleFavorite(this, '${movieDataForStorage}')" class="absolute top-3 left-3 z-20 text-xl ${heartClass} hover:scale-110 active:scale-90 hover:text-pink-400 transition-all filter drop-shadow-lg bg-black/40 rounded-full w-9 h-9 flex items-center justify-center backdrop-blur-md border border-white/10">${heartIcon}</button>
                     ${rating !== 'N/A' && rating !== '0.0' ? `<div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-pink-300 font-bold text-xs shadow-lg border border-white/10">⭐ ${rating}</div>` : ''}
                     
                     <img src="${poster}" alt="${title}" class="w-full h-full object-cover opacity-0 transition-all duration-700 group-hover:scale-105" onload="this.classList.remove('opacity-0')">
@@ -667,7 +785,7 @@
 
         function renderSavedResults(movies) {
             resultsGrid.innerHTML = movies.map((m, index) => {
-                movieDataStore[m.id] = m; // Відновлюємо глобальний стейт для модалки
+                movieDataStore[m.id] = m; 
                 const isFav = favorites.some(fav => (fav.id || fav.imdbID) == m.id);
                 const storageStr = encodeURIComponent(JSON.stringify({ id: m.id, title_ua: m.title_ua, title_en: m.title_en, year: m.year, poster: m.poster }));
                 return generateMovieCardHtml(m.id, index, m.title_ua, m.year, m.genre, m.poster, m.rating, storageStr, isFav);
@@ -675,7 +793,6 @@
         }
 
         // --- ЛОГІКА КІНЕМАТОГРАФІЧНОЇ МОДАЛКИ ТА ВІДЕОПЛЕЄРА ---
-
         async function openMovieModal(id) {
             const modal = document.getElementById('movieModal');
             const content = document.getElementById('movieModalContent');
@@ -687,11 +804,9 @@
             content.innerHTML = `<div class="p-20 w-full flex justify-center"><div class="custom-loader w-12 h-12 rounded-full"></div></div>`;
 
             try {
-                // Магія TMDB: отримуємо деталі, бекдропи, логотипи, трейлери та схожі фільми одним запитом!
                 const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${TMDB_KEY}&language=uk-UA&append_to_response=images,videos,similar&include_image_language=uk,en,null`);
                 const details = await res.json();
                 
-                // Логотип (Спочатку шукаємо український, потім англійський)
                 let logoPath = null;
                 if (details.images?.logos?.length > 0) {
                     const ukLogo = details.images.logos.find(l => l.iso_639_1 === 'uk');
@@ -699,10 +814,8 @@
                     logoPath = (ukLogo || enLogo || details.images.logos[0]).file_path;
                 }
 
-                // Бекдроп
                 const backdropUrl = details.backdrop_path ? `${TMDB_ORIGINAL_IMAGE}${details.backdrop_path}` : movie.poster;
 
-                // Трейлер (YouTube Key)
                 let trailerKey = null;
                 if (details.videos?.results) {
                     const ukTrailer = details.videos.results.find(v => v.iso_639_1 === 'uk' && v.type === 'Trailer');
@@ -711,19 +824,19 @@
                     if (ukTrailer) trailerKey = ukTrailer.key; else if (enTrailer) trailerKey = enTrailer.key; else if (anyTrailer) trailerKey = anyTrailer.key;
                 }
 
-                // Зберігаємо схожі фільми для кнопки
                 window.currentSimilarMovies = details.similar?.results || [];
 
                 const plot = (details.overview && details.overview.trim().length > 10) ? details.overview : (movie.plot || "Опис відсутній.");
                 const safeTitleEn = (movie.title_en || details.original_title).replace(/"/g, '&quot;');
 
+                // Додано style="-webkit-overflow-scrolling: touch;" для ідеального скролу на iOS
                 content.innerHTML = `
                     <div class="absolute inset-0 bg-cover bg-center opacity-40 transition-opacity duration-1000" style="background-image: url('${backdropUrl}')"></div>
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent md:bg-gradient-to-r md:from-slate-900 md:via-slate-900/95 md:to-transparent"></div>
                     
-                    <button onclick="closeMovieModal()" class="absolute top-4 right-4 z-20 bg-black/40 hover:bg-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-colors">&times;</button>
+                    <button onclick="closeMovieModal()" class="absolute top-4 right-4 z-20 bg-black/40 hover:bg-white/20 active:scale-90 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all">&times;</button>
 
-                    <div class="relative z-10 w-full p-6 md:p-12 flex flex-col md:flex-row gap-8 max-h-[90vh] overflow-y-auto custom-scroll">
+                    <div class="relative z-10 w-full p-6 md:p-12 flex flex-col md:flex-row gap-8 max-h-[90vh] overflow-y-auto custom-scroll" style="-webkit-overflow-scrolling: touch;">
                         <div class="flex-shrink-0 w-32 md:w-64 mx-auto md:mx-0 hidden md:block">
                             <img src="${movie.poster}" class="w-full rounded-2xl shadow-2xl border border-white/10" alt="Poster">
                         </div>
@@ -739,11 +852,11 @@
                             <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-3xl">${plot}</p>
 
                             <div id="modalButtons" class="flex flex-wrap gap-4 mt-auto">
-                                ${trailerKey ? `<button onclick="openVideoModal('${trailerKey}')" class="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-slate-200 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105"><span>▶️</span> Трейлер</button>` : `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(safeTitleEn + ' official trailer')}" target="_blank" class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 transition-colors flex items-center gap-2"><span>▶️</span> YouTube</a>`}
+                                ${trailerKey ? `<button onclick="openVideoModal('${trailerKey}')" class="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)]"><span>▶️</span> Трейлер</button>` : `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(safeTitleEn + ' official trailer')}" target="_blank" class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 active:scale-95 transition-colors flex items-center gap-2"><span>▶️</span> YouTube</a>`}
                                 
-                                ${window.currentSimilarMovies.length > 0 ? `<button onclick="renderSimilarMovies()" class="bg-indigo-500/20 text-indigo-300 px-6 py-3 rounded-full font-bold hover:bg-indigo-500/30 transition-colors border border-indigo-500/30 flex items-center gap-2"><span>🕸️</span> Схожі</button>` : ''}
+                                ${window.currentSimilarMovies.length > 0 ? `<button onclick="renderSimilarMovies()" class="bg-indigo-500/20 text-indigo-300 px-6 py-3 rounded-full font-bold hover:bg-indigo-500/30 active:scale-95 transition-all border border-indigo-500/30 flex items-center gap-2"><span>🕸️</span> Схожі</button>` : ''}
                                 
-                                <button data-title="${safeTitleEn}" onclick="getAiCritique(this.dataset.title, this)" class="bg-pink-500/10 text-pink-300 px-6 py-3 rounded-full font-bold hover:bg-pink-500/20 transition-colors border border-pink-500/30 flex items-center gap-2"><span>✨</span> Gemini</button>
+                                <button data-title="${safeTitleEn}" onclick="getAiCritique(this.dataset.title, this)" class="bg-pink-500/10 text-pink-300 px-6 py-3 rounded-full font-bold hover:bg-pink-500/20 active:scale-95 transition-all border border-pink-500/30 flex items-center gap-2"><span>✨</span> Gemini</button>
                             </div>
                         </div>
                     </div>
@@ -778,10 +891,8 @@
         async function getAiCritique(movieTitle, btn) {
             const originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="animate-spin inline-block">✨</span>`;
             try {
-                // Викликаємо без примусового JSON формату
+                // Відключаємо JSON-режим для простої текстової відповіді
                 let critique = await callGemini(`Ти - кращий друг Ані. Напиши милий та влучний коментар про фільм "${movieTitle}" українською мовою. Тільки 1 коротке речення.`, "", false);
-                
-                // Очищаємо від можливих лапок чи переносів рядків, які Gemini може додати
                 critique = critique.replace(/^["'\s]+|["'\s]+$/g, '');
                 
                 const parent = btn.parentElement; btn.remove();
@@ -793,7 +904,7 @@
 
         async function renderSimilarMovies() {
             closeMovieModal();
-            const similar = window.currentSimilarMovies.slice(0, 8); // Беремо топ 8 схожих
+            const similar = window.currentSimilarMovies.slice(0, 8);
             if (!similar || similar.length === 0) return;
 
             resultsGrid.innerHTML = Array(similar.length).fill(createSkeletonCard()).join('');
@@ -826,7 +937,6 @@
                 } catch(e) { if (skeletonCards[i]) skeletonCards[i].style.display = 'none'; }
             }
 
-            // Зберігаємо також схожі фільми як останній результат
             if (fetchedSimilarMovies.length > 0) {
                 localStorage.setItem('ani_last_results', JSON.stringify(fetchedSimilarMovies));
             }
@@ -840,7 +950,6 @@
             if (!promptValue) { promptInput.classList.remove('shake'); void promptInput.offsetWidth; promptInput.classList.add('shake'); showToast("✨ Розкажи мені свій настрій"); return; }
             if (['філіп', 'філя', 'бубочка'].some(word => promptValue.toLowerCase().includes(word))) { triggerFrenchieEasterEgg(); return; }
 
-            // Блокування кнопки
             const submitBtn = document.getElementById('submitBtn');
             const originalBtnHtml = submitBtn.innerHTML;
             submitBtn.disabled = true;
@@ -865,11 +974,16 @@
                 if (genre) localStorage.setItem('ani_movie_last_genre', genre);
 
                 const systemPrompt = `Ти - професійний кіноман. Поверни суворий JSON масив з 8 об'єктів. Схема: [{"title_en": "String", "title_ua": "String", "plot": "Опис сюжету обов'язково УКРАЇНСЬКОЮ мовою"}]. Нічого крім JSON.`;
-                const rawResponse = await callGemini(`Запит: ${promptValue}. Жанр: ${genre}. Роки: ${minYearInput.value} - ${maxYearInput.value}.`, systemPrompt);
+                
+                // Використовуємо надійний JSON-формат напряму (isJson = true)
+                const rawResponse = await callGemini(`Запит: ${promptValue}. Жанр: ${genre}. Роки: ${minYearInput.value} - ${maxYearInput.value}.`, systemPrompt, true);
                 
                 let moviesList = [];
-                try { const match = rawResponse.match(/\[[\s\S]*\]/); if (match) moviesList = JSON.parse(match[0]); else throw new Error(); } 
-                catch (e) { throw new Error("Зірки сьогодні говорять загадками. Спробуй перефразувати запит!"); }
+                try { 
+                    moviesList = JSON.parse(rawResponse); 
+                } catch (e) { 
+                    throw new Error("Зірки сьогодні говорять загадками. Спробуй перефразувати запит!"); 
+                }
 
                 if (!moviesList || moviesList.length === 0) throw new Error("empty");
 
@@ -912,7 +1026,6 @@
                     } catch (err) { if (skeletonCards[i]) skeletonCards[i].style.display = 'none'; }
                 } 
                 
-                // Зберігаємо результати у Local Storage
                 if (finalFetchedMovies.length > 0) {
                     localStorage.setItem('ani_last_results', JSON.stringify(finalFetchedMovies));
                 }
@@ -929,13 +1042,13 @@
                             <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Схоже, ми зайшли в глухий кут</h3>
                             <p class="text-slate-300 text-center max-w-md mb-2">Зірки трохи розгубились і не знайшли ідеального фільму за цим запитом.</p>
                             <p class="text-slate-500 text-sm mb-8 text-center italic">Підказка: спробуй написати щось на кшталт "щось затишне на вечір" або "динамічний бойовик".</p>
-                            <button onclick="focusInputAndScroll()" class="bg-gradient-to-r from-indigo-500 to-pink-500 text-white hover:scale-105 px-8 py-4 rounded-full font-bold transition-all shadow-lg shadow-pink-500/25 flex items-center gap-2">
+                            <button onclick="focusInputAndScroll()" class="bg-gradient-to-r from-indigo-500 to-pink-500 text-white hover:scale-105 active:scale-95 px-8 py-4 rounded-full font-bold transition-all shadow-lg shadow-pink-500/25 flex items-center gap-2">
                                 <span>🔍</span> Повернутись до пошуку
                             </button>
                         </div>
                     `;
                 } else {
-                    resultsGrid.innerHTML = `<div class="col-span-full text-center py-20 px-4"><div class="text-6xl mb-6">⚠️</div><p class="text-xl text-red-400 mb-4 font-bold">Ой-ой, виникла помилка</p><p class="text-slate-400 mb-8">${err.message}</p><button onclick="focusInputAndScroll()" class="bg-white/10 text-white hover:bg-white/20 px-8 py-4 rounded-full font-bold transition-all border border-white/20">Спробувати ще раз</button></div>`;
+                    resultsGrid.innerHTML = `<div class="col-span-full text-center py-20 px-4"><div class="text-6xl mb-6">⚠️</div><p class="text-xl text-red-400 mb-4 font-bold">Ой-ой, виникла помилка</p><p class="text-slate-400 mb-8">${err.message}</p><button onclick="focusInputAndScroll()" class="bg-white/10 text-white active:scale-95 hover:bg-white/20 px-8 py-4 rounded-full font-bold transition-all border border-white/20">Спробувати ще раз</button></div>`;
                 }
             }
         };
