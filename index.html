@@ -311,13 +311,13 @@
                     <div class="space-y-4">
                         <div class="flex justify-between items-center px-1">
                             <label class="text-sm font-medium text-pink-100/70 uppercase tracking-wider">Епоха кіно</label>
-                            <span id="yearDisplay" class="text-pink-400 font-bold text-sm">1970 — 2026</span>
+                            <span id="yearDisplay" class="text-pink-400 font-bold text-sm">1970 — ...</span>
                         </div>
                         <div class="px-2 pt-4 relative h-6"> 
                             <div class="relative w-full h-1 bg-white/10 rounded-full top-2">
                                 <div id="rangeTrack" class="range-track" style="left: 0%; right: 0%;"></div>
-                                <input type="range" id="minYear" min="1970" max="2026" value="1970" class="range-slider" style="z-index: 3;">
-                                <input type="range" id="maxYear" min="1970" max="2026" value="2026" class="range-slider" style="z-index: 4;">
+                                <input type="range" id="minYear" min="1970" value="1970" class="range-slider" style="z-index: 3;">
+                                <input type="range" id="maxYear" min="1970" class="range-slider" style="z-index: 4;">
                             </div>
                         </div>
                     </div>
@@ -506,6 +506,7 @@
 
         function updateFavCount() { document.getElementById('favCount').textContent = favorites.length; }
 
+        // Покращено зчитування унікального ідентифікатора фільму в обраному
         function renderFavoritesList() {
             const list = document.getElementById('favoritesList');
             if (favorites.length === 0) {
@@ -702,10 +703,19 @@
         }
         createHearts();
 
+        // --- ДИНАМІЧНИЙ ЛІМІТ РОКУ (БЕЗ ХАРДКОДУ 2026) ---
+        const currentYear = new Date().getFullYear();
+        minYearInput.max = currentYear;
+        maxYearInput.max = currentYear;
+
         const storedMinYear = localStorage.getItem('ani_movie_min_year');
         const storedMaxYear = localStorage.getItem('ani_movie_max_year');
         if (storedMinYear) minYearInput.value = storedMinYear;
-        if (storedMaxYear) maxYearInput.value = storedMaxYear;
+        if (storedMaxYear) {
+            maxYearInput.value = storedMaxYear;
+        } else {
+            maxYearInput.value = currentYear;
+        }
 
         function updateYearSlider(changedInput) {
             let minVal = parseInt(minYearInput.value), maxVal = parseInt(maxYearInput.value);
@@ -715,7 +725,7 @@
                 else maxYearInput.value = minVal + minGap;
                 minVal = parseInt(minYearInput.value); maxVal = parseInt(maxYearInput.value);
             }
-            const minP = ((minVal - 1970) / (2026 - 1970)) * 100, maxP = ((maxVal - 1970) / (2026 - 1970)) * 100;
+            const minP = ((minVal - 1970) / (currentYear - 1970)) * 100, maxP = ((maxVal - 1970) / (currentYear - 1970)) * 100;
             rangeTrack.style.left = minP + "%"; rangeTrack.style.width = (maxP - minP) + "%";
             yearDisplay.textContent = `${minVal} — ${maxVal}`;
             localStorage.setItem('ani_movie_min_year', minVal); localStorage.setItem('ani_movie_max_year', maxVal);
@@ -1039,6 +1049,7 @@
             } catch (e) { btn.disabled = false; btn.innerHTML = originalText; showToast("Зірки не відповіли. Спробуй ще раз!"); }
         }
 
+        // --- ВИПРАВЛЕНО: КОРЕКТНЕ ОЧИЩЕННЯ СКЕЛЕТОНІВ ПРИ ПОМИЛЦІ ЧЕРЕЗ .remove() ---
         async function renderSimilarMovies() {
             closeMovieModal();
             const similar = window.currentSimilarMovies.slice(0, 8);
@@ -1072,7 +1083,9 @@
                     
                     const cardHtml = generateMovieCardHtml(detailedData.id, i, detailedData.title, releaseYear, firstGenre, posterUrl, rating, storageStr, isFav, isWatched);
                     if (skeletonCards[i]) skeletonCards[i].outerHTML = cardHtml;
-                } catch(e) { if (skeletonCards[i]) skeletonCards[i].style.display = 'none'; }
+                } catch(e) { 
+                    if (skeletonCards[i]) skeletonCards[i].remove(); 
+                }
             }
 
             if (fetchedSimilarMovies.length > 0) {
@@ -1173,10 +1186,10 @@
                     } catch (err) { console.error(err); }
                 } 
                 
-                // Видаляємо зайві скелетони, якщо фільмів знайдено менше ніж 8 (бо інші були переглянуті)
+                // --- ВИПРАВЛЕНО: ВИДАЛЕННЯ ЗАЙВИХ СКЕЛЕТОНІВ ЧЕРЕЗ .remove() ---
                 for (let i = displayedCount; i < skeletonCards.length; i++) {
                     if (skeletonCards[i] && skeletonCards[i].parentNode) {
-                        skeletonCards[i].style.display = 'none';
+                        skeletonCards[i].remove();
                     }
                 }
 
