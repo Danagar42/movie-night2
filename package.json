@@ -1,8 +1,9 @@
 {
   "name": "movie-night",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
-    "ai": "^3.4.0",
-    "@ai-sdk/google-vertex": "^0.1.0"
+    "ai": "^7.0.0",
+    "@ai-sdk/google-vertex": "^5.0.0"
   }
 }
