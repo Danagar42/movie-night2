@@ -37,11 +37,11 @@ export default async function handler(req, res) {
 
     const vertex = createVertex({
       project: process.env.GOOGLE_VERTEX_PROJECT || 'gen-lang-client-0579123407',
-      location: process.env.GOOGLE_VERTEX_LOCATION || 'us-central1',
+      location: process.env.GOOGLE_VERTEX_LOCATION || 'global',
       googleAuthOptions: Object.keys(authOptions).length > 0 ? authOptions : undefined,
     });
 
-    const model = vertex('gemini-2.0-flash');
+    const model = vertex('gemini-3.8-flash');
 
     const generateOptions = {
       model,
