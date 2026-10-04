@@ -2,9 +2,9 @@ import { generateText } from 'ai';
 import { createVertex } from '@ai-sdk/google-vertex';
 
 const CANDIDATE_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-1.5-flash',
-  'gemini-2.5-pro'
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-2.5-flash'
 ];
 
 export default async function handler(req, res) {
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     let text = null;
     let lastError = null;
 
-    // Try candidate models in order (newest/smartest gemini-2.5-flash first, then fallback)
+    // Try candidate models in order (newest gemini-3.8-flash first, then fallback)
     for (const modelName of CANDIDATE_MODELS) {
       try {
         const model = vertex(modelName);
