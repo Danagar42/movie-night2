@@ -1,6 +1,12 @@
 import { generateText } from 'ai';
 import { createVertex } from '@ai-sdk/google-vertex';
 
+const CANDIDATE_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-1.5-flash',
+  'gemini-2.5-pro'
+];
+
 export default async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -35,24 +41,44 @@ export default async function handler(req, res) {
       authOptions.keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     }
 
+    const location = process.env.GOOGLE_VERTEX_LOCATION || 'global';
+
     const vertex = createVertex({
       project: process.env.GOOGLE_VERTEX_PROJECT || 'gen-lang-client-0579123407',
-      location: process.env.GOOGLE_VERTEX_LOCATION || 'global',
+      location: location,
       googleAuthOptions: Object.keys(authOptions).length > 0 ? authOptions : undefined,
     });
 
-    const model = vertex('gemini-3.8-flash');
+    let text = null;
+    let lastError = null;
 
-    const generateOptions = {
-      model,
-      prompt,
-    };
+    // Try candidate models in order (newest/smartest gemini-2.5-flash first, then fallback)
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        const model = vertex(modelName);
+        const generateOptions = {
+          model,
+          prompt,
+        };
 
-    if (systemPrompt) {
-      generateOptions.system = systemPrompt;
+        if (systemPrompt) {
+          generateOptions.system = systemPrompt;
+        }
+
+        const result = await generateText(generateOptions);
+        text = result.text;
+        if (text) {
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+        console.warn(`[Vertex AI] Model ${modelName} in location ${location} failed:`, err.message || err);
+      }
     }
 
-    const { text } = await generateText(generateOptions);
+    if (!text) {
+      throw lastError || new Error('No candidate Vertex AI model responded');
+    }
     
     let cleanText = (text || '').trim();
     if (isJson) {
@@ -62,6 +88,6 @@ export default async function handler(req, res) {
     res.status(200).json({ text: cleanText });
   } catch (error) {
     console.error('Error in /api/recommend:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }
