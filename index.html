@@ -851,7 +851,7 @@
                 const identifier = m.id || m.imdbID;
                 return `
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-4 relative group cursor-pointer hover:bg-white/10 active:scale-[0.98] transition" onclick="openMovieModal(${identifier})">
-                    <img src="${m.poster}" class="w-16 h-24 object-cover rounded-lg opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 600%22%3E%3Crect fill=%22%231e293b%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23475569%22 text-anchor=%22middle%22 font-size=%2248%22%3E🎬%3C/text%3E%3C/svg%3E'; this.classList.remove('opacity-0')">
+                    <img src="${escapeHtml(m.poster)}" class="w-16 h-24 object-cover rounded-lg opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 600%22%3E%3Crect fill=%22%231e293b%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23475569%22 text-anchor=%22middle%22 font-size=%2248%22%3E🎬%3C/text%3E%3C/svg%3E'; this.classList.remove('opacity-0')">
                     <div class="flex-grow">
                         <h3 class="font-bold text-sm text-white mb-1 leading-tight">${escapeHtml(m.title_ua)}</h3>
                         <p class="text-xs text-slate-400 mb-2">${escapeHtml(m.year)}</p>
@@ -995,7 +995,7 @@
                 const identifier = m.id || m.imdbID;
                 return `
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-4 relative group cursor-pointer hover:bg-white/10 active:scale-[0.98] transition" onclick="openMovieModal(${identifier})">
-                    <img src="${m.poster}" class="w-16 h-24 object-cover rounded-lg opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 600%22%3E%3Crect fill=%22%231e293b%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23475569%22 text-anchor=%22middle%22 font-size=%2248%22%3E🎬%3C/text%3E%3C/svg%3E'; this.classList.remove('opacity-0')">
+                    <img src="${escapeHtml(m.poster)}" class="w-16 h-24 object-cover rounded-lg opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 600%22%3E%3Crect fill=%22%231e293b%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23475569%22 text-anchor=%22middle%22 font-size=%2248%22%3E🎬%3C/text%3E%3C/svg%3E'; this.classList.remove('opacity-0')">
                     <div class="flex-grow">
                         <h3 class="font-bold text-sm text-white mb-1 leading-tight">${escapeHtml(m.title_ua)}</h3>
                         <p class="text-xs text-slate-400 mb-2">${escapeHtml(m.year)}</p>
@@ -1283,7 +1283,7 @@
                 }
 
                 document.body.appendChild(el);
-                setTimeout(() => el.remove(), 10000);
+                setTimeout(() => el.remove(), 12000);
             }
 
             setTimeout(() => {
@@ -1317,7 +1317,7 @@
 
                     ${rating !== 'N/A' && rating !== '0.0' ? `<div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-pink-300 font-bold text-xs shadow-lg border border-white/10">${ICONS.star} ${rating}</div>` : ''}
                     
-                    <img src="${poster}" alt="${escapeHtml(title)}" class="w-full h-full object-cover opacity-0 transition-all duration-700 group-hover:scale-105" onload="this.classList.remove('opacity-0')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 600%22%3E%3Crect fill=%22%231e293b%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23475569%22 text-anchor=%22middle%22 font-size=%2248%22%3E🎬%3C/text%3E%3C/svg%3E'; this.classList.remove('opacity-0')">
+                    <img src="${escapeHtml(poster)}" alt="${escapeHtml(title)}" class="w-full h-full object-cover opacity-0 transition-all duration-700 group-hover:scale-105" onload="this.classList.remove('opacity-0')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 600%22%3E%3Crect fill=%22%231e293b%22 width=%22400%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 fill=%22%23475569%22 text-anchor=%22middle%22 font-size=%2248%22%3E🎬%3C/text%3E%3C/svg%3E'; this.classList.remove('opacity-0')">
                     
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent opacity-90 group-hover:opacity-100 transition-opacity"></div>
                     
@@ -1602,11 +1602,24 @@
                     try {
                         if (currentSearchState.shownTitles.includes(m.title_en)) continue;
 
-                        const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(m.title_en)}&language=uk-UA`);
-                        const searchData = await searchRes.json();
+                        let searchData = { results: [] };
+                        if (m.year && !isNaN(parseInt(m.year))) {
+                            const res1 = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(m.title_en)}&primary_release_year=${m.year}&language=uk-UA`);
+                            if (res1.ok) {
+                                const d1 = await res1.json();
+                                if (d1.results && d1.results.length > 0) {
+                                    searchData = d1;
+                                }
+                            }
+                        }
+                        if (!searchData.results || searchData.results.length === 0) {
+                            const res2 = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(m.title_en)}&language=uk-UA`);
+                            if (res2.ok) {
+                                searchData = await res2.json();
+                            }
+                        }
 
                         if (searchData.results?.length > 0) {
-                            
                         let tmdbMovie = null;
                         for (let res of searchData.results) {
                             if (!isMovieInList(res, watchedMovies) && !isMovieInList(res, favorites)) {
@@ -1614,7 +1627,7 @@
                                 break;
                             }
                         }
-                        if (!tmdbMovie) return; // Do not cache null on accidental match
+                        if (!tmdbMovie) continue; // Skip to next movie if all options are in lists
 
 
                             if (isMovieInList(tmdbMovie, watchedMovies)) continue;
@@ -2001,8 +2014,15 @@
         else {
             const movie = JSON.parse(decodeURIComponent(movieStr));
             const existingIndex = favorites.findIndex(m => String(m.id || m.imdbID) === String(id));
-            if (existingIndex > -1) removeFavorite(id);
-            else addFavorite(movie);
+            if (existingIndex > -1) {
+                removeFavorite(id);
+            } else {
+                favorites.unshift(movie);
+                localStorage.setItem('ani_movie_favorites', JSON.stringify(favorites));
+                updateFavCount();
+                renderFavoritesList();
+                showToast("Додано в збережені ❤️");
+            }
         }
         const modalBtn = document.getElementById('modal-fav-btn');
         if (modalBtn) {
@@ -2030,11 +2050,32 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                if (data.favorites) { localStorage.setItem('ani_movie_favorites', JSON.stringify(data.favorites)); favorites = data.favorites; }
-                if (data.watchedMovies) { localStorage.setItem('ani_movie_watched', JSON.stringify(data.watchedMovies)); watchedMovies = data.watchedMovies; }
+                
+                const validateMovie = (m) => {
+                    return m && typeof m === 'object' && 'id' in m && 'title_ua' in m && 'title_en' in m && 'year' in m && 'genre' in m && 'rating' in m && 'plot' in m && 'poster' in m;
+                };
+
+                const validatePoster = (url) => {
+                    if (typeof url !== 'string') return false;
+                    if (url.includes('"') || url.includes("'") || url.includes('<') || url.includes('>')) return false;
+                    if (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('data:') || url.startsWith('icons/')) return true;
+                    return false;
+                };
+
+                if (data.favorites) {
+                    const validFavs = data.favorites.filter(m => validateMovie(m) && validatePoster(m.poster));
+                    localStorage.setItem('ani_movie_favorites', JSON.stringify(validFavs));
+                    favorites = validFavs;
+                }
+                if (data.watchedMovies) {
+                    const validWatched = data.watchedMovies.filter(m => validateMovie(m) && validatePoster(m.poster));
+                    localStorage.setItem('ani_movie_watched', JSON.stringify(validWatched));
+                    watchedMovies = validWatched;
+                }
+
                 updateFavCount(); updateWatchedCount(); renderFavoritesList(); renderWatchedList(); renderWatchedStats();
                 showToast("Дані успішно відновлено!");
-            } catch (err) { showToast("Помилка відновлення даних: невірний формат", "error"); }
+            } catch (err) { console.error(err); showToast("Помилка відновлення даних: невірний формат", "error"); }
         };
         reader.readAsText(file);
     }

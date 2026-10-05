@@ -484,14 +484,36 @@ const checkBackfill = setInterval(() => {
         console.log('17. text updates test passed.');
 
         
-// 1. philipRegex rejects "Філіппіни" and accepts "Філіп", "філя", "бубочка"
-const philipRegex = /(^|[^\p{L}])(філіп|філя|бубочка)([^\p{L}]|$)/iu;
-assert.strictEqual(philipRegex.test("Філіппіни"), false, "Regex should reject Філіппіни");
-assert.strictEqual(philipRegex.test("Філіп"), true, "Regex should accept Філіп");
-assert.strictEqual(philipRegex.test("філя"), true, "Regex should accept філя");
-assert.strictEqual(philipRegex.test("Ой бубочка моя"), true, "Regex should accept бубочка");
-assert.strictEqual(philipRegex.test("Бубочка"), true, "Regex should accept Бубочка");
-console.log('18. philipRegex tests passed.');
+// 18. Sandbox philipRegex tests
+sandbox.document.getElementById = function(id) {
+    if (id === 'promptInput') return sandbox.mockPromptInput;
+    if (id === 'genreSelect') return { value: '' };
+    return { classList: { add: () => {}, remove: () => {} }, offsetWidth: 0, style: {} };
+};
+sandbox.isSearching = false;
+let triggerCount = 0;
+sandbox.triggerFrenchieEasterEgg = () => { triggerCount++; };
+
+const simulateSubmit = (val) => {
+    sandbox.mockPromptInput = { value: val, classList: { add: () => {}, remove: () => {} }, offsetWidth: 0 };
+    vm.runInContext(`
+        if (searchForm.onsubmit) {
+            const e = { preventDefault: () => {} };
+            searchForm.onsubmit(e).catch(err => {});
+        }
+    `, sandbox);
+};
+
+simulateSubmit("Філіппіни");
+assert.strictEqual(triggerCount, 0, "Regex should reject Філіппіни in sandbox");
+
+simulateSubmit("Ой Філіп");
+assert.strictEqual(triggerCount, 1, "Regex should accept Філіп in sandbox");
+
+simulateSubmit("бубочка");
+assert.strictEqual(triggerCount, 2, "Regex should accept бубочка in sandbox");
+
+console.log('18. philipRegex sandbox tests passed.');
 
 // 2. Heading "Переглянуто" does not use broken -webkit-background-clip-text
 assert.ok(!htmlContent.includes('-webkit-background-clip-text text-transparent">Переглянуто'), "Heading Переглянуто should not use broken -webkit-background-clip-text");
