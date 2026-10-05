@@ -483,7 +483,19 @@
 
     <div id="toastContainer" aria-live="polite" role="status"></div>
 
-    <script>
+    
+</body>
+</html>
+
+
+
+
+
+
+
+
+<script>
+
         
     const ICONS = {
         heart: (filled) => filled 
@@ -1559,7 +1571,8 @@
                 ];
                 const uniqueKnownTitles = [...new Set(knownTitles)];
                 const excludeStr = uniqueKnownTitles.length > 0
-                    ? `\nНЕ ВКЛЮЧАЙ ці фільми (вже відомі): ${uniqueKnownTitles.slice(0, 50).join(', ')}.`
+                    ? `
+НЕ ВКЛЮЧАЙ ці фільми (вже відомі): ${uniqueKnownTitles.slice(0, 50).join(', ')}.`
                     : '';
 
                 const systemPrompt = `Ти - професійний кіноман. Поверни суворий JSON масив з 15 об'єктів. Схема: [{"title_en": "String", "title_ua": "String", "plot": "Опис сюжету обов'язково УКРАЇНСЬКОЮ мовою"}]. Нічого крім JSON.`;
@@ -1999,15 +2012,8 @@
                 .then(reg => console.log('SW registered:', reg.scope))
                 .catch(err => console.warn('SW registration failed:', err));
         }
-    </script>
-</body>
-</html>
+    
 
-
-
-
-
-<script>
     function toggleFavoriteModal(id, movieStr) {
         const cardBtn = document.getElementById(`fav-btn-${id}`);
         if (cardBtn) toggleFavorite(cardBtn, movieStr);
@@ -2030,9 +2036,8 @@
             modalBtn.innerHTML = isNowFav ? ICONS.heart(true) + " Збережено" : ICONS.heart(false) + " Зберегти";
         }
     }
-</script>
 
-<script>
+
     function exportDataBackup() {
         const data = { favorites: safeParseJSON('ani_movie_favorites', []), watchedMovies: safeParseJSON('ani_movie_watched', []) };
         const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
@@ -2066,11 +2071,13 @@
                     const validFavs = data.favorites.filter(m => validateMovie(m) && validatePoster(m.poster));
                     localStorage.setItem('ani_movie_favorites', JSON.stringify(validFavs));
                     favorites = validFavs;
+                    validFavs.forEach(m => { movieDataStore[m.id || m.imdbID] = m; });
                 }
                 if (data.watchedMovies) {
                     const validWatched = data.watchedMovies.filter(m => validateMovie(m) && validatePoster(m.poster));
                     localStorage.setItem('ani_movie_watched', JSON.stringify(validWatched));
                     watchedMovies = validWatched;
+                    validWatched.forEach(m => { movieDataStore[m.id || m.imdbID] = m; });
                 }
 
                 updateFavCount(); updateWatchedCount(); renderFavoritesList(); renderWatchedList(); renderWatchedStats();
@@ -2079,4 +2086,5 @@
         };
         reader.readAsText(file);
     }
+
 </script>

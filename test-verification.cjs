@@ -20,7 +20,7 @@ const sandbox = {
     },
     document: {
         addEventListener: () => {},
-        getElementById: (id) => ({
+        getElementById: (id) => ({ appendChild: () => {}, removeChild: () => {},
             value: '',
             classList: {
                 add: () => {},
@@ -488,7 +488,7 @@ const checkBackfill = setInterval(() => {
 sandbox.document.getElementById = function(id) {
     if (id === 'promptInput') return sandbox.mockPromptInput;
     if (id === 'genreSelect') return { value: '' };
-    return { classList: { add: () => {}, remove: () => {} }, offsetWidth: 0, style: {} };
+    return { classList: { add: () => {}, remove: () => {} }, offsetWidth: 0, style: {}, appendChild: () => {}, textContent: "" };
 };
 sandbox.isSearching = false;
 let triggerCount = 0;
@@ -539,6 +539,22 @@ console.log('22. Backup functions tests passed.');
 assert.ok(htmlContent.includes('Враження друга ✨'), "Button text in modal should use 'Враження друга ✨'");
 assert.ok(!htmlContent.includes('Gemini</button>'), "Button text in modal should not use 'Gemini'");
 console.log('23. Modal button text tests passed.');
+
+        
+// 24. movieDataStore sync test
+sandbox.FileReader = class {
+    readAsText(file) {
+        this.onload({ target: { result: file.content } });
+    }
+};
+vm.runInContext(`
+    const mockFile = { content: '{"favorites":[{"id":123,"title_ua":"A","title_en":"A","year":"2023","genre":"Action","rating":"5","plot":"Plot","poster":"https://safe"}],"watchedMovies":[]}' };
+    const evt = { target: { files: [mockFile] } };
+    importDataBackup(evt);
+`, sandbox);
+const hasMovieData = vm.runInContext(`!!movieDataStore[123]`, sandbox);
+assert.strictEqual(hasMovieData, true, 'movieDataStore should have imported movie 123');
+console.log('24. movieDataStore sync test passed.');
 
         console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
     }
