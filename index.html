@@ -17,6 +17,18 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Onest:wght@300;400;500;600;700&display=swap">
     <style>
         *:focus-visible { outline: 2px solid #E5A93C; outline-offset: 2px; }
+
+        header#mainHeader { 
+            --pad: 1.5rem; 
+            padding: max(var(--pad), env(safe-area-inset-top)) max(var(--pad), env(safe-area-inset-right)) var(--pad) max(var(--pad), env(safe-area-inset-left)); 
+        }
+        header#mainHeader.compact { --pad: .75rem; }
+        #toastContainer {
+            bottom: max(24px, env(safe-area-inset-bottom, 24px));
+        }
+        .side-panel > div:first-child { padding-top: max(1.5rem, env(safe-area-inset-top)); }
+        #videoModal > button { top: max(1rem, env(safe-area-inset-top)); }
+
         @media (prefers-reduced-motion: reduce) {
             *, ::before, ::after {
                 animation-duration: 0.01ms !important;
@@ -250,7 +262,16 @@
         .custom-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(244, 114, 182, 0.3); border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(244, 114, 182, 0.5); }
+
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .movie-card-anim {
+            animation: cardFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
     </style>
+
 </head>
 <body class="text-gray-200 min-h-[100dvh] flex flex-col">
 
@@ -284,7 +305,7 @@
     <!-- Watched Panel (Right) -->
     <div id="watchedPanel" class="side-panel fixed top-0 right-0 h-full w-full sm:w-96 border-l border-white/10 z-[110] transform translate-x-full transition-transform duration-500 flex flex-col shadow-2xl">
         <div class="p-6 border-b border-white/10 flex justify-between items-center">
-            <h2 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 -webkit-background-clip-text text-transparent">Переглянуто <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block ml-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></h2>
+            <h2 class="text-2xl font-bold gradient-text flex items-center">Переглянуто <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block ml-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></h2>
             <button onclick="toggleWatchedPanel()" aria-label="Закрити панель" class="text-slate-400 hover:text-white active:scale-90 p-2 rounded-full hover:bg-white/5 transition"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
         
@@ -449,7 +470,14 @@
         </div>
     </main>
 
-    <footer class="p-10 text-center text-slate-500 text-sm border-t border-white/5 mt-10">
+    <footer class="p-10 text-center text-slate-500 text-sm border-t border-white/5 mt-10 flex flex-col items-center gap-4">
+        <div class="flex gap-4">
+            <button onclick="exportDataBackup()" class="text-xs text-indigo-400/80 hover:text-indigo-300 transition-colors underline bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10">Зберегти копію</button>
+            <label class="text-xs text-emerald-400/80 hover:text-emerald-300 transition-colors underline bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 cursor-pointer">
+                Відновити копію
+                <input type="file" accept=".json" class="hidden" onchange="importDataBackup(event)">
+            </label>
+        </div>
         Зроблено з любов'ю до Тебе <span style="font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;">🫶</span> &copy; 01.06.2026
     </footer>
 
@@ -614,7 +642,7 @@
             query: '',
             genre: '',
             minYear: 1970,
-            maxYear: 2026,
+            maxYear: new Date().getFullYear(),
             shownTitles: [],
             shownIds: [],
             isLoadingMore: false
@@ -668,7 +696,7 @@
             return list.some(item => {
                 if (!item) return false;
                 const itemId = item.id || item.imdbID;
-                if (itemId && targetId && String(itemId) === String(targetId)) return true;
+                if (itemId && targetId) { if (String(itemId) === String(targetId)) return true; return false; }
                 
                 const itemTitleEn = (item.title_en || '').toLowerCase().trim();
                 const itemTitleUa = (item.title_ua || '').toLowerCase().trim();
@@ -834,7 +862,6 @@
         }
 
         function removeFavorite(identifier) {
-            favorites = favorites.filter(m => String(m.id || m.imdbID) !== String(identifier));
             const existingFavorites = safeParseJSON('ani_movie_favorites', []);
             const removedIndex = existingFavorites.findIndex(m => String(m.id || m.imdbID) === String(identifier));
             if (removedIndex > -1) {
@@ -906,10 +933,10 @@
             const isW = watchedMovies.some(w => w.id == id);
             const modalBtn = document.getElementById('modal-watch-btn');
             if(isW) {
-                modalBtn.innerHTML = ICONS.close + " Не бачив(ла)";
+                modalBtn.innerHTML = ICONS.close + " Не бачила";
                 modalBtn.className = "bg-slate-700 text-white px-6 py-3 rounded-full font-bold active:scale-95 transition-all border border-slate-600 flex items-center gap-2";
             } else {
-                modalBtn.innerHTML = ICONS.check + " Вже бачив(ла)";
+                modalBtn.innerHTML = ICONS.check + " Вже бачила";
                 modalBtn.className = "bg-indigo-500/20 text-indigo-300 px-6 py-3 rounded-full font-bold hover:bg-indigo-500/30 active:scale-95 transition-all border border-indigo-500/30 flex items-center gap-2";
             }
         }
@@ -1086,7 +1113,12 @@
             const minP = ((minVal - 1970) / (currentYear - 1970)) * 100, maxP = ((maxVal - 1970) / (currentYear - 1970)) * 100;
             rangeTrack.style.left = minP + "%"; rangeTrack.style.width = (maxP - minP) + "%";
             yearDisplay.textContent = `${minVal} — ${maxVal}`;
-            localStorage.setItem('ani_movie_min_year', minVal); localStorage.setItem('ani_movie_max_year', maxVal);
+            localStorage.setItem('ani_movie_min_year', minVal);
+              if (maxVal >= currentYear) {
+                  localStorage.removeItem('ani_movie_max_year');
+              } else {
+                  localStorage.setItem('ani_movie_max_year', maxVal);
+              }
         }
         function bringToFront(element) { minYearInput.style.zIndex = 3; maxYearInput.style.zIndex = 3; element.style.zIndex = 4; }
         minYearInput.addEventListener('mousedown', () => bringToFront(minYearInput)); minYearInput.addEventListener('touchstart', () => bringToFront(minYearInput), {passive: true});
@@ -1198,7 +1230,7 @@
         }
         function triggerFrenchieEasterEgg() {
             const animTypes = ['rain', 'fountain', 'throw'];
-            const numberOfDogs = 40; 
+            const numberOfDogs = 18; 
             
             for (let i = 0; i < numberOfDogs; i++) {
                 const el = document.createElement('img');
@@ -1278,7 +1310,7 @@
             const cardOpacity = isWatched ? "opacity-40 grayscale" : "";
 
             return `
-                <div id="movie-card-${id}" class="movie-card border border-white/5 rounded-[1.5rem] overflow-hidden flex flex-col h-full animate-in fade-in zoom-in-95 duration-500 relative cursor-pointer group aspect-[2/3] ${cardOpacity}" style="animation-delay: ${index * 80}ms" onclick="openMovieModal(${id})">
+                <div id="movie-card-${id}" class="movie-card border border-white/5 rounded-[1.5rem] overflow-hidden flex flex-col h-full movie-card-anim relative cursor-pointer group aspect-[2/3] ${cardOpacity}" style="animation-delay: ${index * 80}ms" onclick="openMovieModal(${id})">
                     <button id="fav-btn-${id}" onclick="event.stopPropagation(); toggleFavorite(this, '${movieDataForStorage}')" class="absolute top-3 left-3 z-20 text-xl ${heartClass} hover:scale-110 active:scale-90 hover:text-pink-400 transition-all filter drop-shadow-lg bg-black/40 rounded-full w-9 h-9 flex items-center justify-center backdrop-blur-md border border-white/10">${heartIcon}</button>
                     
                     <button id="watch-btn-${id}" onclick="event.stopPropagation(); toggleWatched(this, '${movieDataForStorage}', ${id})" class="absolute top-3 left-14 z-20 text-xl ${watchedClass} hover:scale-110 active:scale-90 hover:text-indigo-400 transition-all filter drop-shadow-lg rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center backdrop-blur-md border" title="Відмітити як переглянуте">${ICONS.check}</button>
@@ -1354,7 +1386,7 @@
                 const safeTitleEn = (movie.title_en || details.original_title).replace(/"/g, '&quot;');
                 
                 const isWatchedModal = watchedMovies.some(w => w.id == movie.id);
-                const watchedBtnText = isWatchedModal ? ICONS.close + " Не бачив(ла)" : ICONS.eye(true) + " Вже бачив(ла)";
+                const watchedBtnText = isWatchedModal ? ICONS.close + " Не бачила" : ICONS.eye(true) + " Вже бачила";
                 const watchedBtnClass = isWatchedModal ? "bg-slate-700 text-white border-slate-600" : "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border-indigo-500/30";
                 const storageStr = encodeURIComponent(JSON.stringify({ id: movie.id, title_ua: movie.title_ua || details.title, title_en: safeTitleEn, year: movie.year || (details.release_date ? details.release_date.split('-')[0] : 'N/A'), poster: movie.poster })).replace(/'/g, '%27');
 
@@ -1380,13 +1412,16 @@
                             <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-3xl">${escapeHtml(plot)}</p>
 
                             <div id="modalButtons" class="flex flex-wrap gap-4 mt-auto">
-                                ${trailerKey ? `<button onclick="openVideoModal('${trailerKey}')" class="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)]"><span>${ICONS.play}</span> Трейлер</button>` : `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(safeTitleEn + ' official trailer')}" target="_blank" class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 active:scale-95 transition-colors flex items-center gap-2"><span>${ICONS.play}</span> YouTube</a>`}
+                                ${trailerKey ? `<button id="modal-fav-btn" onclick="toggleFavoriteModal(${movieObj.id}, '${storageStr}')" class="bg-white/10 hover:bg-white/20 text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-bold active:scale-95 transition-all flex items-center gap-2 text-sm md:text-base">
+                                ${isFav ? ICONS.heart(true) + " Збережено" : ICONS.heart(false) + " Зберегти"}
+                            </button>
+                            <button onclick="openVideoModal('${trailerKey}')" class="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)]"><span>${ICONS.play}</span> Трейлер</button>` : `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(safeTitleEn + ' official trailer')}" target="_blank" class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 active:scale-95 transition-colors flex items-center gap-2"><span>${ICONS.play}</span> YouTube</a>`}
                                 
                                 <button onclick="toggleWatchedModal(${movie.id}, '${storageStr}')" id="modal-watch-btn" class="${watchedBtnClass} px-6 py-3 rounded-full font-bold active:scale-95 transition-all border flex items-center gap-2">${watchedBtnText}</button>
                                 
                                 ${window.currentSimilarMovies.length > 0 ? `<button onclick="renderSimilarMovies()" class="bg-indigo-500/20 text-indigo-300 px-6 py-3 rounded-full font-bold hover:bg-indigo-500/30 active:scale-95 transition-all border border-indigo-500/30 flex items-center gap-2"><span>${ICONS.similar}</span> Схожі</button>` : ''}
                                 
-                                <button data-title="${safeTitleEn}" onclick="getAiCritique(this.dataset.title, this)" class="bg-pink-500/10 text-pink-300 px-6 py-3 rounded-full font-bold hover:bg-pink-500/20 active:scale-95 transition-all border border-pink-500/30 flex items-center gap-2"><span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span> Gemini</button>
+                                <button data-title="${safeTitleEn}" onclick="getAiCritique(this.dataset.title, this)" class="bg-pink-500/10 text-pink-300 px-6 py-3 rounded-full font-bold hover:bg-pink-500/20 active:scale-95 transition-all border border-pink-500/30 flex items-center gap-2"><span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span> Враження друга ✨</button>
                             </div>
                         </div>
                     </div>
@@ -1494,7 +1529,7 @@
                 resultsGrid.innerHTML = ""; loader.classList.remove('hidden'); loader.classList.add('flex');
                 loadMoreContainer.classList.add('hidden');
 
-                const loaderPhrases = ["Спілкуюсь із зірками ✨...", "Аналізую твій настрій 🧠...", "Готую віртуальний попкорн 🍿...", "Фільтрую те, що ти вже бачив(ла) 👀...", "Майже готово ❤️..."];
+                const loaderPhrases = ["Спілкуюсь із зірками ✨...", "Аналізую твій настрій 🧠...", "Готую віртуальний попкорн 🍿...", "Фільтрую те, що ти вже бачила 👀...", "Майже готово ❤️..."];
                 let phraseIndex = 0; loaderText.textContent = loaderPhrases[0]; loaderText.style.opacity = 1;
                 if (currentLoaderInterval) clearInterval(currentLoaderInterval);
                 currentLoaderInterval = setInterval(() => { phraseIndex = (phraseIndex + 1) % loaderPhrases.length; loaderText.style.opacity = 0; setTimeout(() => { loaderText.textContent = loaderPhrases[phraseIndex]; loaderText.style.opacity = 1; }, 300); }, 3000);
@@ -1559,7 +1594,7 @@
                 const startIndex = allGridChildren.length - skeletonCount;
 
                 const finalFetchedMovies = [];
-                let displayedCount = 0;
+                let displayedCount = 0; let tmdbErrorsCount = 0; let skippedByYear = 0;
 
                 for (let i = 0; i < moviesList.length; i++) {
                     if (displayedCount >= 8) break;
@@ -1571,7 +1606,16 @@
                         const searchData = await searchRes.json();
 
                         if (searchData.results?.length > 0) {
-                            const tmdbMovie = searchData.results[0];
+                            
+                        let tmdbMovie = null;
+                        for (let res of searchData.results) {
+                            if (!isMovieInList(res, watchedMovies) && !isMovieInList(res, favorites)) {
+                                tmdbMovie = res;
+                                break;
+                            }
+                        }
+                        if (!tmdbMovie) return; // Do not cache null on accidental match
+
 
                             if (isMovieInList(tmdbMovie, watchedMovies)) continue;
                             if (isMovieInList(tmdbMovie, favorites)) continue;
@@ -1586,7 +1630,7 @@
                             const rating = data.vote_average?.toFixed(1) || 'N/A';
                             const finalPlot = (data.overview && data.overview.trim().length > 10) ? data.overview : m.plot;
 
-                            const movieObjForStore = { id: data.id, title_ua: m.title_ua, title_en: m.title_en, year: releaseYear, genre: firstGenre, poster: posterUrl, plot: finalPlot, rating: rating };
+                            const movieObjForStore = { id: data.id, title_ua: (data.title && data.title.trim() !== "") ? data.title : m.title_ua, title_en: m.title_en, year: releaseYear, genre: firstGenre, poster: posterUrl, plot: finalPlot, rating: rating };
                             movieDataStore[data.id] = movieObjForStore;
                             finalFetchedMovies.push(movieObjForStore);
 
@@ -1597,7 +1641,7 @@
                             const isWatched = false; 
                             const storageStr = encodeURIComponent(JSON.stringify({ id: data.id, title_ua: m.title_ua, title_en: m.title_en, year: releaseYear, poster: posterUrl })).replace(/'/g, '%27');
 
-                            const cardHtml = generateMovieCardHtml(data.id, startIndex + displayedCount, m.title_ua, releaseYear, firstGenre, posterUrl, rating, storageStr, isFav, isWatched);
+                            const cardHtml = generateMovieCardHtml(data.id, startIndex + displayedCount, (data.title && data.title.trim() !== "") ? data.title : m.title_ua, releaseYear, firstGenre, posterUrl, rating, storageStr, isFav, isWatched);
                             if (skeletonCards[displayedCount]) skeletonCards[displayedCount].outerHTML = cardHtml;
                             displayedCount++;
                         }
@@ -1608,16 +1652,36 @@
                     if (skeletonCards[i] && skeletonCards[i].parentNode) skeletonCards[i].remove();
                 }
 
-                if (!appendMode && displayedCount === 0) {
-                    resultsGrid.innerHTML = `
-                        <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 animate-in fade-in zoom-in-95 duration-500">
-                            <div class="text-7xl mb-4 text-center">🤯🎬</div>
-                            <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Оце так кіноман!</h3>
-                            <p class="text-slate-300 text-center max-w-md mb-2">Ти вже бачив(ла) абсолютно всі фільми, які зараз спали на думку зіркам.</p>
-                            <p class="text-slate-500 text-sm mb-8 text-center italic">Спробуй змінити жанр або написати щось інше в запиті.</p>
-                        </div>`;
-                    loadMoreContainer.classList.add('hidden');
-                } else if (displayedCount > 0) {
+                let skippedAlreadySeen = moviesList.length - displayedCount - tmdbErrorsCount - skippedByYear;
+                    if (tmdbErrorsCount >= Math.min(moviesList.length, 5)) {
+                        throw new Error("Забагато помилок мережі з TMDB. Спробуй відправити запит ще раз.");
+                    }
+                    if (!appendMode && skippedByYear > 0 && skippedByYear >= (moviesList.length - tmdbErrorsCount - skippedAlreadySeen)) {
+                        resultsGrid.innerHTML = `
+                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
+                                <div class="text-7xl mb-4 text-center">⏳</div>
+                                <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Епоха не та...</h3>
+                                <p class="text-slate-300 text-center max-w-md mb-2">У ${minYear}–${maxYear} нічого нового, розшир епоху!</p>
+                            </div>`;
+                        loadMoreContainer.classList.add('hidden');
+                    } else if (!appendMode && skippedAlreadySeen > 0 && skippedAlreadySeen >= (moviesList.length - tmdbErrorsCount - skippedByYear)) {
+                        resultsGrid.innerHTML = `
+                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
+                                <div class="text-7xl mb-4 text-center">🎬</div>
+                                <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Ти вже все бачила!</h3>
+                                <p class="text-slate-300 text-center max-w-md mb-2">Ми знайшли фільми, але вони вже є у твоєму списку переглянутих або збережених.</p>
+                            </div>`;
+                        loadMoreContainer.classList.add('hidden');
+                    } else if (!appendMode && displayedCount === 0) {
+                        resultsGrid.innerHTML = `
+                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
+                                <div class="text-7xl mb-4 text-center">🤯🎬</div>
+                                <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Оце так кіноман!</h3>
+                                <p class="text-slate-300 text-center max-w-md mb-2">Ти вже бачила абсолютно всі фільми, які зараз спали на думку зіркам.</p>
+                                <p class="text-slate-500 text-sm mb-8 text-center italic">Спробуй змінити жанр або написати щось інше в запиті.</p>
+                            </div>`;
+                        loadMoreContainer.classList.add('hidden');
+                    } else if (displayedCount > 0) {
                     const allShownMovies = appendMode
                         ? [...safeParseJSON('ani_last_results', []), ...finalFetchedMovies]
                         : finalFetchedMovies;
@@ -1637,7 +1701,7 @@
                 if (!appendMode) {
                     if (err.message === "empty") {
                         resultsGrid.innerHTML = `
-                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 animate-in fade-in zoom-in-95 duration-500">
+                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
                                 <div class="text-7xl mb-4 text-center">🍿🕵️‍♀️</div>
                                 <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Схоже, ми зайшли в глухий кут</h3>
                                 <p class="text-slate-300 text-center max-w-md mb-2">Зірки трохи розгубились і не знайшли ідеального фільму за цим запитом.</p>
@@ -1698,12 +1762,18 @@
 
                 const profile = getUserTasteProfile();
                 const tasteHint = profile ? `Враховуй її смак: ${profile.profileDescription}` : '';
-                const excludeHint = profile && profile.recentTitles.length > 0
-                    ? `НЕ РЕКОМЕНДУЙ ці фільми: ${profile.recentTitles.join(', ')}.`
+                
+                const motdKnownTitles = [
+                    ...favorites.map(f => f.title_en || f.title_ua).filter(Boolean),
+                    ...watchedMovies.map(w => w.title_en || w.title_ua).filter(Boolean)
+                ];
+                const excludeHint = motdKnownTitles.length > 0
+                    ? `Не пропонуй ці фільми (вони вже переглянуті або збережені): ${[...new Set(motdKnownTitles)].slice(0, 50).join(', ')}.`
                     : '';
+
                 const prompt = `Порекомендуй ОДИН чудовий ${season} фільм: ${dayMoods[dayOfWeek]}. ${tasteHint}${excludeHint} Фільм має бути відомий та з високим рейтингом. Поверни JSON: {"title_en": "...", "title_ua": "...", "why": "Одне коротке речення УКРАЇНСЬКОЮ чому саме ЇЙ варто це подивитися сьогодні, враховуючи її смак"}`;
 
-                const raw = await callGemini(prompt, 'Ти - кращий друг Ані, допомагаєш їй вибрати фільм. Поверни ТІЛЬКИ JSON.', true);
+                const raw = await callGemini(prompt, 'Ти - кращий друг Ані, допомагаєш їй вибрати фільм. Поверни ТІЛЬКИ JSON.', true, true);
                 const suggestion = JSON.parse(raw);
 
                 const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(suggestion.title_en)}&language=uk-UA`);
@@ -1785,13 +1855,19 @@
     
         
         function spinRoulette() {
-            const cards = Array.from(resultsGrid.querySelectorAll('.movie-card'));
-            if (cards.length === 0) { showToast("Спочатку знайди фільми ✨"); return; }
-
+            if (isSpinning) return;
+            const allCards = Array.from(resultsGrid.querySelectorAll('.movie-card'));
+            const cards = Array.from(resultsGrid.querySelectorAll('.movie-card:not(.grayscale)'));
+            if (cards.length === 0) { 
+                if (allCards.length > 0) showToast("Всі ці фільми ти вже бачив! Завантаж ще.");
+                else showToast("Спочатку знайди фільми");
+                return; 
+            }
+            isSpinning = true;
             cards.forEach(c => c.classList.remove('roulette-winner', 'roulette-highlight'));
-
-            const totalSteps = 20 + Math.floor(Math.random() * 10);
             const winnerIndex = Math.floor(Math.random() * cards.length);
+            const totalSteps = cards.length * Math.max(1, Math.round(28 / cards.length)) + winnerIndex;
+
             let step = 0;
             let currentIndex = 0;
 
@@ -1848,7 +1924,7 @@
             const promptInput = document.getElementById('promptInput');
             const promptValue = promptInput.value.trim();
             if (!promptValue) { promptInput.classList.remove('shake'); void promptInput.offsetWidth; promptInput.classList.add('shake'); showToast("✨ Розкажи мені свій настрій"); return; }
-            if (['філіп', 'філя', 'бубочка'].some(word => promptValue.toLowerCase().includes(word))) { triggerFrenchieEasterEgg(); return; }
+            if (/(^|[^\p{L}])(філіп|філя|бубочка)([^\p{L}]|$)/iu.test(promptValue)) { triggerFrenchieEasterEgg(); return; }
 
             const genre = document.getElementById('genreSelect').value;
             if (genre) localStorage.setItem('ani_movie_last_genre', genre);
@@ -1863,6 +1939,47 @@
             }
         });
 
+        async function backfillSaved() {
+            if (localStorage.getItem('ani_backfill_v2')) return;
+            let updated = false;
+
+            async function processList(list, key) {
+                let changed = false;
+                for (let i = 0; i < list.length; i++) {
+                    const item = list[i];
+                    if (!item.genre || !item.rating || item.genre === 'РљС–РЅРѕ' || item.rating === 'N/A') {
+                        try {
+                            const idToFetch = item.id || item.imdbID;
+                            if (!idToFetch) continue;
+                            const detailsRes = await fetch(`https://api.themoviedb.org/3/movie/${idToFetch}?api_key=${TMDB_KEY}&language=uk-UA`);
+                            if (detailsRes.ok) {
+                                const data = await detailsRes.json();
+                                item.genre = data.genres?.length > 0 ? data.genres[0].name : 'РљС–РЅРѕ';
+                                item.rating = data.vote_average?.toFixed(1) || 'N/A';
+                                changed = true;
+                            }
+                        } catch (e) {
+                            console.warn("Backfill error", e);
+                        }
+                    }
+                }
+                if (changed) {
+                    localStorage.setItem(key, JSON.stringify(list));
+                    updated = true;
+                }
+            }
+
+            await processList(favorites, 'ani_movie_favorites');
+            await processList(watchedMovies, 'ani_movie_watched');
+
+            if (updated) {
+                renderFavoritesList();
+                renderWatchedList();
+                renderWatchedStats();
+            }
+            localStorage.setItem('ani_backfill_v2', 'done');
+        }
+
         // --- Service Worker ---
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
@@ -1876,3 +1993,49 @@
 
 
 
+
+<script>
+    function toggleFavoriteModal(id, movieStr) {
+        const cardBtn = document.getElementById(`fav-btn-${id}`);
+        if (cardBtn) toggleFavorite(cardBtn, movieStr);
+        else {
+            const movie = JSON.parse(decodeURIComponent(movieStr));
+            const existingIndex = favorites.findIndex(m => String(m.id || m.imdbID) === String(id));
+            if (existingIndex > -1) removeFavorite(id);
+            else addFavorite(movie);
+        }
+        const modalBtn = document.getElementById('modal-fav-btn');
+        if (modalBtn) {
+            const isNowFav = favorites.some(fav => (fav.id || fav.imdbID) == id);
+            modalBtn.innerHTML = isNowFav ? ICONS.heart(true) + " Збережено" : ICONS.heart(false) + " Зберегти";
+        }
+    }
+</script>
+
+<script>
+    function exportDataBackup() {
+        const data = { favorites: safeParseJSON('ani_movie_favorites', []), watchedMovies: safeParseJSON('ani_movie_watched', []) };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `movie-night-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    function importDataBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.favorites) { localStorage.setItem('ani_movie_favorites', JSON.stringify(data.favorites)); favorites = data.favorites; }
+                if (data.watchedMovies) { localStorage.setItem('ani_movie_watched', JSON.stringify(data.watchedMovies)); watchedMovies = data.watchedMovies; }
+                updateFavCount(); updateWatchedCount(); renderFavoritesList(); renderWatchedList(); renderWatchedStats();
+                showToast("Дані успішно відновлено!");
+            } catch (err) { showToast("Помилка відновлення даних: невірний формат", "error"); }
+        };
+        reader.readAsText(file);
+    }
+</script>

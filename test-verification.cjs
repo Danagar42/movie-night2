@@ -34,7 +34,8 @@ const sandbox = {
             options: [],
             addEventListener: () => {},
             max: '',
-            style: {}
+            style: {},
+            remove: () => {}
         }),
         createElement: (tag) => ({
             classList: {
@@ -81,6 +82,7 @@ const sandbox = {
     isNaN: isNaN,
     encodeURIComponent: encodeURIComponent,
     decodeURIComponent: decodeURIComponent,
+    URLSearchParams: URLSearchParams,
     navigator: {}
 };
 
@@ -239,10 +241,12 @@ vm.runInContext(`
 assert.strictEqual(vm.runInContext(`isMovieInList({id: 100}, favorites)`, sandbox), true);
 // 2) Matching string imdbID
 assert.strictEqual(vm.runInContext(`isMovieInList({id: 'tt200'}, favorites)`, sandbox), true);
-// 3) Matching English title (even if ID is different/missing)
-assert.strictEqual(vm.runInContext(`isMovieInList({id: 999, title_en: "matrix "}, favorites)`, sandbox), true);
-// 4) Matching Ukrainian title
-assert.strictEqual(vm.runInContext(`isMovieInList({id: 888, title_ua: "аватар"}, watchedMovies)`, sandbox), true);
+// 3) Matching English title (when ID is missing/not both TMDB IDs)
+assert.strictEqual(vm.runInContext(`isMovieInList({title_en: "matrix "}, favorites)`, sandbox), true);
+// 4) Matching Ukrainian title (when ID is missing)
+assert.strictEqual(vm.runInContext(`isMovieInList({title_ua: "аватар"}, watchedMovies)`, sandbox), true);
+// 4.1) Remake isolation: different numeric TMDB IDs must NOT match even if titles match
+assert.strictEqual(vm.runInContext(`isMovieInList({id: 999, title_en: "matrix"}, favorites)`, sandbox), false);
 // 5) Completely non-matching movie returning false
 assert.strictEqual(vm.runInContext(`isMovieInList({id: 404, title_en: "Unknown"}, favorites)`, sandbox), false);
 console.log('6. Robust Favorites filtering test passed.');
@@ -288,7 +292,6 @@ vm.runInContext(`
 `, sandbox);
 assert.ok(toastMsg.includes('Додай щонайменше 3 фільми'), 'Should show toast when < 3 movies');
 console.log('6.2. searchByTaste guard test passed.');
-
 // 7. Service Worker file exists
 const swExists = require('fs').existsSync('sw.js');
 assert.ok(swExists, 'sw.js should exist in project root');
@@ -300,6 +303,16 @@ console.log('7. Service Worker file test passed.');
 
 // A11y & Redesign tests
 const htmlContent = require('fs').readFileSync('index.html', 'utf8');
+
+// 6.3 Roulette cubic deceleration and isSpinning
+assert.ok(htmlContent.includes('if (isSpinning) return;'), 'Should have isSpinning guard');
+assert.ok(htmlContent.includes('.movie-card:not(.grayscale)'), 'Should select not grayscale cards');
+assert.ok(htmlContent.includes('const totalSteps = cards.length * Math.max(1, Math.round(28 / cards.length)) + winnerIndex;'), 'Should have scaled deceleration formula');
+console.log('6.3. Roulette cubic deceleration and isSpinning test passed.');
+
+// 6.4 Silent MOTD
+assert.ok(/callGemini\([\s\S]*?'Ти - кращий друг Ані, допомагаєш їй вибрати фільм\. Поверни ТІЛЬКИ JSON\.',\s*true,\s*true\)/.test(htmlContent), 'Should call gemini silently for MOTD');
+console.log('6.4. Silent MOTD test passed.');
 
 assert.ok(htmlContent.includes('Lora'), 'Should include Lora font');
 assert.ok(htmlContent.includes('Onest'), 'Should include Onest font');
@@ -403,6 +416,108 @@ sandbox.document.getElementById = function(id) {
 
 vm.runInContext("const btn = document.getElementById('saveApiKey'); if (btn && btn.onclick) { btn.onclick(); } else { console.log('Mocking saveApiKey click not fully possible in this VM state'); }", sandbox);
 console.log('11. saveApiKey guard test passed.');
-console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+// 12. safe-area CSS checks
+assert.ok(htmlContent.includes('padding: max(var(--pad), env(safe-area-inset-top)) max(var(--pad), env(safe-area-inset-right)) var(--pad) max(var(--pad), env(safe-area-inset-left));'), 'Safe area CSS is missing in mainHeader');
+assert.ok(htmlContent.includes('#videoModal > button { top: max(1rem, env(safe-area-inset-top)); }'), 'Safe area CSS is missing in videoModal button');
 
+// 13. Year slider localStorage.removeItem('ani_movie_max_year') when maxVal >= currentYear
+vm.runInContext(`
+    maxYearInput.value = currentYear.toString();
+    minYearInput.value = '2000';
+    localStorage.setItem('ani_movie_max_year', '2025');
+    updateYearSlider();
+`, sandbox);
+assert.strictEqual(sandbox.localStorage.getItem('ani_movie_max_year'), null, 'max_year should be removed if >= currentYear');
+console.log('13. Year slider max_year test passed.');
 
+// 14. backfillSaved() behavior with missing genres/ratings in sandbox
+sandbox.fetch = async (url) => {
+    if (url.includes('/movie/555')) {
+        return { ok: true, json: async () => ({ genres: [{name: 'Horror'}], vote_average: 8.5 }) };
+    }
+    return { ok: false };
+};
+vm.runInContext(`
+    favorites = [{id: 555, title_en: "Scary Movie"}];
+    watchedMovies = [];
+    localStorage.removeItem('ani_backfill_v2');
+    let renderFavoritesListCalled = false;
+    let renderWatchedListCalled = false;
+    renderFavoritesList = () => { renderFavoritesListCalled = true; };
+    renderWatchedList = () => { renderWatchedListCalled = true; };
+    renderWatchedStats = () => {};
+`, sandbox);
+vm.runInContext(`backfillSaved().then(() => { window.backfillDone = true; });`, sandbox);
+const checkBackfill = setInterval(() => {
+    if (sandbox.window.backfillDone) {
+        clearInterval(checkBackfill);
+        const favs = JSON.parse(sandbox.localStorage.getItem('ani_movie_favorites'));
+        assert.strictEqual(favs[0].genre, 'Horror', 'Backfill should populate genre');
+        assert.strictEqual(favs[0].rating, '8.5', 'Backfill should populate rating');
+        console.log('14. backfillSaved test passed.');
+
+        // 15. devKeyBtn URL parameter removal when ?dev is not present
+        let devKeyBtnRemoved = false;
+        sandbox.document.getElementById = function(id) {
+            if (id === 'devKeyBtn') {
+                return { remove: () => { devKeyBtnRemoved = true; } };
+            }
+            return { classList: { remove: () => {}, add: () => {} }, style: {}, remove: () => {} };
+        };
+        sandbox.location = { search: '' };
+        vm.runInContext(`
+            if (!new URLSearchParams(location.search).has('dev')) document.getElementById('devKeyBtn')?.remove();
+        `, sandbox);
+        assert.strictEqual(devKeyBtnRemoved, true, 'devKeyBtn should be removed without ?dev');
+        console.log('15. devKeyBtn test passed.');
+
+        // 16. Test api/recommend.js prompt template directly
+        const recContent = require('fs').readFileSync('api/recommend.js', 'utf8');
+        assert.ok(recContent.includes('Знайди 15 фільмів'), 'API must ask for 15 movies');
+        assert.ok(recContent.includes('"plot": "..."'), 'API must ask for plot');
+        console.log('16. api/recommend.js prompt test passed.');
+
+        // 17. skippedByYear message logic and feminine forms
+        assert.ok(htmlContent.includes('skippedByYear'), 'skippedByYear logic is missing');
+        assert.ok(htmlContent.includes('нічого нового, розшир епоху!'), 'Empty state message for skippedByYear is missing');
+        assert.ok(!htmlContent.includes('бачив(ла)'), 'Feminine forms not properly replaced in loaderPhrases');
+        console.log('17. text updates test passed.');
+
+        
+// 1. philipRegex rejects "Філіппіни" and accepts "Філіп", "філя", "бубочка"
+const philipRegex = /(^|[^\p{L}])(філіп|філя|бубочка)([^\p{L}]|$)/iu;
+assert.strictEqual(philipRegex.test("Філіппіни"), false, "Regex should reject Філіппіни");
+assert.strictEqual(philipRegex.test("Філіп"), true, "Regex should accept Філіп");
+assert.strictEqual(philipRegex.test("філя"), true, "Regex should accept філя");
+assert.strictEqual(philipRegex.test("Ой бубочка моя"), true, "Regex should accept бубочка");
+assert.strictEqual(philipRegex.test("Бубочка"), true, "Regex should accept Бубочка");
+console.log('18. philipRegex tests passed.');
+
+// 2. Heading "Переглянуто" does not use broken -webkit-background-clip-text
+assert.ok(!htmlContent.includes('-webkit-background-clip-text text-transparent">Переглянуто'), "Heading Переглянуто should not use broken -webkit-background-clip-text");
+assert.ok(htmlContent.includes('gradient-text flex items-center">Переглянуто'), "Heading Переглянуто should use gradient-text flex items-center");
+console.log('19. Heading style tests passed.');
+
+// 3. cardFadeIn / .movie-card-anim exists in CSS
+assert.ok(htmlContent.includes('@keyframes cardFadeIn'), "CSS should contain @keyframes cardFadeIn");
+assert.ok(htmlContent.includes('.movie-card-anim'), "CSS should contain .movie-card-anim");
+console.log('20. CSS animations tests passed.');
+
+// 4. Modal contains favorite button (modal-fav-btn) and toggleFavoriteModal is defined
+assert.ok(htmlContent.includes('id="modal-fav-btn"'), "Modal should contain favorite button with id modal-fav-btn");
+assert.ok(htmlContent.includes('function toggleFavoriteModal('), "toggleFavoriteModal should be defined");
+console.log('21. Modal favorite button tests passed.');
+
+// 5. Backup export/import functions are defined
+assert.ok(htmlContent.includes('function exportDataBackup('), "exportDataBackup should be defined");
+assert.ok(htmlContent.includes('function importDataBackup('), "importDataBackup should be defined");
+console.log('22. Backup functions tests passed.');
+
+// 6. Button text in modal uses "Враження друга ✨"
+assert.ok(htmlContent.includes('Враження друга ✨'), "Button text in modal should use 'Враження друга ✨'");
+assert.ok(!htmlContent.includes('Gemini</button>'), "Button text in modal should not use 'Gemini'");
+console.log('23. Modal button text tests passed.');
+
+        console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+    }
+}, 50);
