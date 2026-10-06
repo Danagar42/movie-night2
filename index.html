@@ -1616,8 +1616,9 @@
                         if (currentSearchState.shownTitles.includes(m.title_en)) continue;
 
                         let searchData = { results: [] };
-                        if (m.year && !isNaN(parseInt(m.year))) {
-                            const res1 = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(m.title_en)}&primary_release_year=${m.year}&language=uk-UA`);
+                        const yNum = parseInt(m.year, 10);
+                        if (!isNaN(yNum) && yNum > 1900) {
+                            const res1 = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(m.title_en)}&primary_release_year=${yNum}&language=uk-UA`);
                             if (res1.ok) {
                                 const d1 = await res1.json();
                                 if (d1.results && d1.results.length > 0) {
@@ -1740,9 +1741,11 @@
                         resultsGrid.innerHTML = `<div class="col-span-full text-center py-20 px-4"><div class="text-6xl mb-6">⚠️</div><p class="text-xl text-red-400 mb-4 font-bold">Ой-ой, виникла помилка</p><p class="text-slate-400 mb-8">${escapeHtml(err.message)}</p><button onclick="focusInputAndScroll()" class="bg-white/10 text-white active:scale-95 hover:bg-white/20 px-8 py-4 rounded-full font-bold transition-all border border-white/20">Спробувати ще раз</button></div>`;
                     }
                 } else {
-                    showToast("Не вдалося завантажити ще. Спробуй ще раз!");
+                    showToast("Помилка завантаження додаткових фільмів 😿", "error");
                 }
-                document.getElementById('loadMoreContainer').classList.add('hidden');
+                if (!appendMode) {
+                    document.getElementById('loadMoreContainer').classList.add('hidden');
+                }
             }
         }
 
@@ -2055,7 +2058,8 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                
+                if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error("Invalid");
+
                 const validateMovie = (m) => {
                     return m && typeof m === 'object' && 'id' in m && 'title_ua' in m && 'title_en' in m && 'year' in m && 'genre' in m && 'rating' in m && 'plot' in m && 'poster' in m;
                 };
@@ -2067,22 +2071,34 @@
                     return false;
                 };
 
-                if (data.favorites) {
-                    const validFavs = data.favorites.filter(m => validateMovie(m) && validatePoster(m.poster));
+                const rawWatched = Array.isArray(data.watched) ? data.watched : (Array.isArray(data.watchedMovies) ? data.watchedMovies : null);
+                const rawFavs = Array.isArray(data.favorites) ? data.favorites : null;
+
+                if (!rawFavs && !rawWatched) throw new Error("No valid keys");
+
+                let importedAny = false;
+
+                if (rawFavs) {
+                    const validFavs = rawFavs.filter(m => validateMovie(m) && validatePoster(m.poster));
+                    if (validFavs.length > 0) importedAny = true;
                     localStorage.setItem('ani_movie_favorites', JSON.stringify(validFavs));
                     favorites = validFavs;
                     validFavs.forEach(m => { movieDataStore[m.id || m.imdbID] = m; });
                 }
-                if (data.watchedMovies) {
-                    const validWatched = data.watchedMovies.filter(m => validateMovie(m) && validatePoster(m.poster));
+                
+                if (rawWatched) {
+                    const validWatched = rawWatched.filter(m => validateMovie(m) && validatePoster(m.poster));
+                    if (validWatched.length > 0) importedAny = true;
                     localStorage.setItem('ani_movie_watched', JSON.stringify(validWatched));
                     watchedMovies = validWatched;
                     validWatched.forEach(m => { movieDataStore[m.id || m.imdbID] = m; });
                 }
 
+                if (!importedAny && Object.keys(data).length > 0) throw new Error("No valid items");
+
                 updateFavCount(); updateWatchedCount(); renderFavoritesList(); renderWatchedList(); renderWatchedStats();
                 showToast("Дані успішно відновлено!");
-            } catch (err) { console.error(err); showToast("Помилка відновлення даних: невірний формат", "error"); }
+            } catch (err) { console.error(err); showToast("❌ Помилка читання файлу резервної копії", "error"); }
         };
         reader.readAsText(file);
     }
