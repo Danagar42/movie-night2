@@ -1,14 +1,36 @@
 import { generateText } from 'ai';
 import { createVertex } from '@ai-sdk/google-vertex';
 
-const CANDIDATE_MODELS = [
+const MODELS_TO_TRY = [
   'gemini-3.8-flash',
   'gemini-3.5-flash',
-  'gemini-2.5-flash'
+  'gemini-3.5-flash-lite'
 ];
 
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 30;
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  if (!rateLimitMap.has(ip)) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  const entry = rateLimitMap.get(ip);
+  if (now > entry.resetTime) {
+    entry.count = 1;
+    entry.resetTime = now + RATE_LIMIT_WINDOW_MS;
+    return true;
+  }
+  if (entry.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+
 export default async function handler(req, res) {
-  // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,11 +45,52 @@ export default async function handler(req, res) {
     return;
   }
 
+  const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip)) {
+    res.status(429).json({ error: 'Too Many Requests' });
+    return;
+  }
+
   try {
-    const { prompt, systemPrompt, isJson } = req.body || {};
+    const body = req.body || {};
+    
+    let prompt = '';
+    let systemPrompt = '';
+    let isJson = body.isJson !== false; // default true if not strictly false
+
+    const sanitize = (str, max = 500) => (typeof str === 'string' ? str.slice(0, max) : '');
+    
+    if (body.type === 'search' || body.mood) {
+        const mood = sanitize(body.mood);
+        const genre = sanitize(body.genre);
+        const minYear = Number(body.minYear) || 1970;
+        const maxYear = Number(body.maxYear) || 2026;
+        let excludeTitles = Array.isArray(body.excludeTitles) ? body.excludeTitles : [];
+        excludeTitles = excludeTitles.map(t => sanitize(t, 100)).slice(0, 50);
+
+        systemPrompt = "Ти - найкращий кінознавець. Відповідай JSON масивом.";
+        prompt = `Знайди 15 фільмів. Настрій: ${mood||''}, Жанр: ${genre||''}, Рік: ${minYear}-${maxYear}. JSON масив з об'єктами: {"title_en": "...", "title_ua": "...", "year": "...", "plot": "..."}`;
+        if (excludeTitles.length > 0) prompt += ` ПРОПУСТИ: ${excludeTitles.join(', ')}`;
+    } else if (body.type === 'motd') {
+        const season = sanitize(body.season, 50);
+        const dayMood = sanitize(body.dayMood, 100);
+        const tasteHint = sanitize(body.tasteHint, 300);
+        let excludeTitles = Array.isArray(body.excludeTitles) ? body.excludeTitles : [];
+        excludeTitles = excludeTitles.map(t => sanitize(t, 100)).slice(0, 50);
+
+        systemPrompt = "Ти - кіно-куратор. Відповідай JSON.";
+        prompt = `Підбери 1 ${season} фільм. Настрій: ${dayMood}. ${tasteHint} Поверни JSON: {"title_en": "...", "title_ua": "...", "year": "...", "why": "..."}`;
+        if (excludeTitles.length > 0) prompt += ` ПРОПУСТИ: ${excludeTitles.join(', ')}`;
+    } else if (body.type === 'critique') {
+        const movieTitle = sanitize(body.movieTitle, 100);
+        const tasteCtx = sanitize(body.tasteCtx, 300);
+        systemPrompt = "Ти - щирий друг Ані, ділишся враженнями про кіно.";
+        prompt = `Ти - кращий друг Ані.${tasteCtx ? ' ' + tasteCtx : ''} Розкажи їй своїми словами про фільм "${movieTitle}" тільки 1-2 речення: чому саме їй це сподобається або на що звернути увагу. Тільки 1 коротке речення.`;
+        isJson = false;
+    }
 
     if (!prompt) {
-      res.status(400).json({ error: 'Missing prompt' });
+      res.status(400).json({ error: 'Missing valid parameters' });
       return;
     }
 
@@ -52,10 +115,17 @@ export default async function handler(req, res) {
     let text = null;
     let lastError = null;
 
-    // Try candidate models in order (newest gemini-3.8-flash first, then fallback)
-    for (const modelName of CANDIDATE_MODELS) {
+    for (const modelName of MODELS_TO_TRY) {
       try {
-        const model = vertex(modelName);
+        const model = vertex(modelName, {
+          useSearchGrounding: false,
+          safetySettings: [
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' }
+          ]
+        });
         const generateOptions = {
           model,
           prompt,
