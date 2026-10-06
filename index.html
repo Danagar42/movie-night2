@@ -1583,7 +1583,7 @@
                 );
 
                 let moviesList = [];
-                try { moviesList = JSON.parse(rawResponse); }
+                console.log("moviesList:", rawResponse); try { moviesList = JSON.parse(rawResponse); }
                 catch (e) { throw new Error("Зірки сьогодні говорять загадками. Спробуй перефразувати запит!"); }
 
                 if (!moviesList || moviesList.length === 0) throw new Error("empty");
@@ -1615,7 +1615,7 @@
                     try {
                         if (currentSearchState.shownTitles.includes(m.title_en)) continue;
 
-                        let searchData = { results: [] };
+                        console.log("Processing movie:", m); let searchData = { results: [] };
                         const yNum = parseInt(m.year, 10);
                         if (!isNaN(yNum) && yNum > 1900) {
                             const res1 = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(m.title_en)}&primary_release_year=${yNum}&language=uk-UA`);

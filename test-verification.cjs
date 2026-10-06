@@ -35,7 +35,9 @@ const sandbox = {
             addEventListener: () => {},
             max: '',
             style: {},
-            remove: () => {}
+            remove: () => {},
+            getBoundingClientRect: () => ({ top: 0, width: 0, height: 0, left: 0 }),
+            children: []
         }),
         createElement: (tag) => ({
             classList: {
@@ -498,8 +500,11 @@ const simulateSubmit = (val) => {
     sandbox.mockPromptInput = { value: val, classList: { add: () => {}, remove: () => {} }, offsetWidth: 0 };
     vm.runInContext(`
         if (searchForm.onsubmit) {
+            const originalPerform = performSearch;
+            performSearch = async () => {}; // mock to prevent async bleed
             const e = { preventDefault: () => {} };
             searchForm.onsubmit(e).catch(err => {});
+            performSearch = originalPerform;
         }
     `, sandbox);
 };
@@ -563,7 +568,7 @@ sandbox.document.getElementById = function(id) {
     if (id === 'loadMoreContainer') {
         return {
             classList: {
-                add: (cls) => sandbox.loadMoreContainerClassList.add(cls),
+                add: (cls) => { sandbox.loadMoreContainerClassList.add(cls); },
                 remove: (cls) => sandbox.loadMoreContainerClassList.delete(cls)
             }
         };
@@ -571,29 +576,63 @@ sandbox.document.getElementById = function(id) {
     if (id === 'loadMoreBtn' || id === 'submitBtn') return { innerHTML: '', disabled: false };
     if (id === 'promptInput') return sandbox.mockPromptInput || { value: 'test' };
     if (id === 'genreSelect') return { value: '' };
-    return { classList: { add: () => {}, remove: () => {} }, offsetWidth: 0, style: {}, appendChild: () => {}, textContent: "" };
+    if (id === 'loader') return { classList: { add: () => {}, remove: () => {} }, getBoundingClientRect: () => ({ top: 0 }) };
+    if (id === 'resultsGrid') return sandbox.resultsGrid;
+    return { classList: { add: () => {}, remove: () => {} }, offsetWidth: 0, style: {}, appendChild: () => {}, textContent: "", getBoundingClientRect: () => ({ top: 0 }) };
 };
 sandbox.isSearching = false;
 sandbox.currentLoaderInterval = null;
 sandbox.loader = { classList: { add: () => {}, remove: () => {} }, getBoundingClientRect: () => ({ top: 0 }) };
 sandbox.resultsGrid = { innerHTML: '', querySelectorAll: () => [], appendChild: () => {}, children: [], insertAdjacentHTML: () => {} };
 sandbox.loaderText = { style: {} };
+
+const originalFetch = sandbox.fetch;
+sandbox.fetch = async () => { throw new Error("Simulated Network Error"); };
+
 vm.runInContext(`
     performSearch("test", "", 1990, 2020, [], true).catch(() => {});
 `, sandbox);
 
 setTimeout(() => {
-    // wait for it to fail (it will fail because callGemini is not mocked properly or we simulate network error)
-    // Actually let's just assert that catch block logic exists in htmlContent
-    assert.ok(/if\s*\(\!appendMode\)\s*\{\s*document\.getElementById\(\'loadMoreContainer\'\)\.classList\.add\(\'hidden\'\);\s*\}/.test(htmlContent), "appendMode failure should preserve loadMoreContainer visibility");
+    assert.strictEqual(sandbox.loadMoreContainerClassList.has('hidden'), false, "appendMode failure should not add 'hidden' to loadMoreContainer");
     console.log('25. appendMode failure preserves loadMoreContainer visibility test passed.');
 
     // 26. TMDB year validation & fallback logic
-    assert.ok(htmlContent.includes('const yNum = parseInt(m.year, 10);'), "TMDB year validation logic missing");
-    assert.ok(htmlContent.includes('if (!isNaN(yNum) && yNum > 1900) {'), "TMDB year fallback logic missing");
-    console.log('26. TMDB year validation & fallback logic test passed.');
+    sandbox.fetchUrls = [];
+    sandbox.fetch = async (url) => {
+        sandbox.fetchUrls.push(url);
+        return { ok: true, json: async () => ({ results: [] }) };
+    };
+    vm.runInContext(`
+        const originalCallGemini = callGemini;
+        callGemini = async () => '[{"title_en": "ValidYear", "year": "2020"}, {"title_en": "InvalidYear", "year": "abc"}, {"title_en": "TooOld", "year": "1800"}]';
+        isSearching = false;
+        performSearch("test", "", 1990, 2020, [], false).catch(() => {});
+    `, sandbox);
 
-    // 27. importDataBackup rejects malformed files
+    setTimeout(() => {
+        const urls = sandbox.fetchUrls;
+        const validYearUrls = urls.filter(u => u.includes('ValidYear'));
+        const invalidYearUrls = urls.filter(u => u.includes('InvalidYear'));
+        const tooOldUrls = urls.filter(u => u.includes('TooOld'));
+
+        // For valid year, it should first try with primary_release_year=2020
+        assert.ok(validYearUrls.some(u => u.includes('primary_release_year=2020')), "Should query primary_release_year for 2020");
+        // Because we mocked results: [], it should ALSO fallback
+        assert.ok(validYearUrls.some(u => !u.includes('primary_release_year')), "Should fallback for 2020 if no results");
+
+        // For invalid year "abc", it should NOT use primary_release_year
+        assert.ok(invalidYearUrls.every(u => !u.includes('primary_release_year')), "Should NOT query primary_release_year for abc");
+
+        // For too old year "1800", it should NOT use primary_release_year
+        assert.ok(tooOldUrls.every(u => !u.includes('primary_release_year')), "Should NOT query primary_release_year for 1800");
+
+        vm.runInContext(`callGemini = originalCallGemini;`, sandbox);
+        sandbox.fetch = originalFetch;
+        console.log('26. TMDB year validation & fallback logic test passed.');
+    }, 100);
+
+        // 27. importDataBackup rejects malformed files
     sandbox.showToastMessage = "";
     sandbox.showToast = function(msg) { sandbox.showToastMessage = msg; };
     vm.runInContext(`
