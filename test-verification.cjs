@@ -672,7 +672,60 @@ setTimeout(() => {
             assert.ok(!has101, 'Should NOT fetch details for candidate 101 since it is watched');
             console.log('28. MOTD candidate iteration test passed.');
             
-            console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+            // 29. TMDB Ukrainian title prioritization
+            sandbox.fetch = async (url) => {
+                if (url.includes('search/movie')) {
+                    return { ok: true, json: async () => ({ results: [{ id: 501, title_en: 'Test 29' }] }) };
+                }
+                if (url.includes('/movie/501')) {
+                    return { ok: true, json: async () => ({ id: 501, title: 'Офіційна Назва', release_date: '2023-01-01', genres: [], vote_average: 8.0, overview: '' }) };
+                }
+                return { ok: true, json: async () => ({ id: 501 }) };
+            };
+            vm.runInContext(`
+                callGemini = async () => '[{"title_en": "Test 29", "title_ua": "Варіант ШІ", "year": "2023"}]';
+                isSearching = false;
+                performSearch("test", "", 1990, 2020, [], false).catch(console.error);
+            `, sandbox);
+
+            setTimeout(() => {
+                const storedTitle = vm.runInContext('movieDataStore[501]?.title_ua', sandbox);
+                assert.strictEqual(storedTitle, 'Офіційна Назва', 'Should prioritize TMDB title over Gemini title_ua');
+                console.log('29. TMDB Ukrainian title prioritization test passed.');
+
+                // 30. removeFavorite DOM and state cleanup
+                let favBtnClassRemoved = false;
+                sandbox.document.getElementById = function(id) {
+                    if (id === 'favCount') return sandbox.favCountMock || { textContent: '1' };
+                    if (id === 'fav-btn-123') return { classList: { add: () => {}, remove: (cls) => { if(cls==='text-pink-500') favBtnClassRemoved = true; } }, innerHTML: '' };
+                    if (id === 'btn-fav-modal') return { classList: { add: () => {}, remove: () => {} }, innerHTML: '', setAttribute: () => {} };
+                    if (id === 'tasteChip') return { classList: { add: () => {}, remove: () => {} } };
+                    return { classList: { add: () => {}, remove: () => {} }, offsetWidth: 0, style: {}, appendChild: () => {}, textContent: "", getBoundingClientRect: () => ({ top: 0 }), children: [] };
+                };
+                sandbox.favCountMock = { textContent: '1' };
+                vm.runInContext(`
+                    favorites = [{ id: 123, title_en: "To Remove" }];
+                    localStorage.setItem('ani_movie_favorites', JSON.stringify(favorites));
+                    removeFavorite(123);
+                `, sandbox);
+                
+                const remainingFavs = JSON.parse(sandbox.localStorage.getItem('ani_movie_favorites'));
+                assert.strictEqual(remainingFavs.length, 0, 'LocalStorage favorites should be empty');
+                assert.strictEqual(String(sandbox.favCountMock.textContent), '0', 'favCount should be updated to 0');
+                assert.strictEqual(favBtnClassRemoved, true, 'fav-btn-123 should have text-pink-500 removed');
+                console.log('30. removeFavorite DOM and state cleanup test passed.');
+
+                // 31. Easter Egg 12s cleanup timeout verification
+                const scriptSource = require('fs').readFileSync('index.html', 'utf8');
+                assert.ok(scriptSource.includes('setTimeout'), "Should have a setTimeout for cleanup");
+                assert.ok(scriptSource.includes('12000'), "Timeout should be exactly 12000ms");
+                // More precise check: triggerFrenchieEasterEgg contains 12000
+                const eggMatch = scriptSource.match(/function triggerFrenchieEasterEgg[\s\S]*?12000/);
+                assert.ok(eggMatch, "triggerFrenchieEasterEgg should have a 12000ms timeout");
+                console.log('31. Easter Egg 12s cleanup timeout verification test passed.');
+
+                console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+            }, 100);
         }, 100);
     }, 100);
 }, 100);
