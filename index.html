@@ -1809,8 +1809,11 @@
                 const searchData = await searchRes.json();
 
                 if (searchData.results?.length > 0) {
-                    const tmdb = searchData.results[0];
-                    if (isMovieInList(tmdb, watchedMovies) || isMovieInList(tmdb, favorites)) {
+                    const tmdb = searchData.results.find(candidate => 
+                        !isMovieInList(candidate, watchedMovies) && 
+                        !isMovieInList(candidate, favorites)
+                    );
+                    if (!tmdb) {
                         // Фільм вже відомий — не показуємо рекомендацію дня
                         console.log('Movie of the Day skipped — already in watched/favorites');
                         return;

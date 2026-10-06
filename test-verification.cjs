@@ -644,7 +644,36 @@ setTimeout(() => {
         assert.ok(sandbox.showToastMessage.includes('❌ Помилка читання файлу резервної копії'), "importDataBackup should reject malformed files");
         console.log('27. importDataBackup rejects malformed files test passed.');
         
-        console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+        // 28. MOTD candidate iteration
+        sandbox.motdFetchUrls = [];
+        sandbox.fetch = async (url) => {
+            sandbox.motdFetchUrls.push(url);
+            if (url.includes('search/movie')) {
+                return { ok: true, json: async () => ({ results: [{ id: 101, title_en: 'InWatched' }, { id: 102, title_en: 'NotInWatched' }] }) };
+            }
+            if (url.includes('/movie/102')) {
+                return { ok: true, json: async () => ({ id: 102, title: 'NotInWatched', release_date: '2023-01-01', genres: [], vote_average: 8.0, overview: '' }) };
+            }
+            return { ok: true, json: async () => ({ id: 999 }) }; // fallback
+        };
+        vm.runInContext(`
+            localStorage.removeItem('ani_motd');
+            watchedMovies = [{ id: 101, title_en: 'InWatched' }];
+            favorites = [];
+            const oldCallGemini28 = callGemini;
+            callGemini = async () => '{"title_en": "TestMovie", "title_ua": "Test", "why": "test"}';
+            loadMovieOfTheDay().catch(console.error);
+        `, sandbox);
+        
+        setTimeout(() => {
+            const has102 = sandbox.motdFetchUrls.some(u => u.includes('/movie/102'));
+            const has101 = sandbox.motdFetchUrls.some(u => u.includes('/movie/101'));
+            assert.ok(has102, 'Should fetch details for candidate 102');
+            assert.ok(!has101, 'Should NOT fetch details for candidate 101 since it is watched');
+            console.log('28. MOTD candidate iteration test passed.');
+            
+            console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+        }, 100);
     }, 100);
 }, 100);
 
