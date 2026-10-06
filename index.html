@@ -470,14 +470,15 @@
         </div>
     </main>
 
-    <footer class="p-10 text-center text-slate-500 text-sm border-t border-white/5 mt-10 flex flex-col items-center gap-4">
-        <div class="flex gap-4">
-            <button onclick="exportDataBackup()" class="text-xs text-indigo-400/80 hover:text-indigo-300 transition-colors underline bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10">Зберегти копію</button>
-            <label class="text-xs text-emerald-400/80 hover:text-emerald-300 transition-colors underline bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 cursor-pointer">
+    <footer class="p-10 text-center text-slate-500 text-sm border-t border-white/5 mt-10 flex flex-col items-center gap-6">
+        <div class="flex flex-wrap justify-center gap-4">
+            <button type="button" onclick="exportDataBackup()" class="text-xs text-indigo-400/80 hover:text-indigo-300 transition-all active:scale-95 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 cursor-pointer select-none">Зберегти копію</button>
+            <label tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input').click();}" class="text-xs text-emerald-400/80 hover:text-emerald-300 transition-all active:scale-95 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 cursor-pointer select-none">
                 Відновити копію
                 <input type="file" accept=".json" class="hidden" onchange="importDataBackup(event)">
             </label>
-        <div class="flex flex-col items-center gap-2 mt-1">
+        </div>
+        <div class="flex flex-col items-center gap-2">
             <span class="text-slate-400 text-sm">Зроблено з любов'ю до Тебе</span>
             <span class="text-3xl select-none transition-transform hover:scale-125 inline-block py-1" style="font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;" aria-label="Любов">🫶</span>
             <span class="text-xs text-slate-500">&copy; 01.06.2026</span>
