@@ -1,10 +1,13 @@
 import { generateText } from 'ai';
 import { createVertex } from '@ai-sdk/google-vertex';
+import fs from 'fs';
+import path from 'path';
 
 const MODELS_TO_TRY = [
   'gemini-3.8-flash',
   'gemini-3.5-flash',
-  'gemini-3.5-flash-lite'
+  'gemini-3.5-flash-lite',
+  'gemini-2.5-flash'
 ];
 
 const rateLimitMap = new Map();
@@ -60,7 +63,15 @@ export default async function handler(req, res) {
 
     const sanitize = (str, max = 500) => (typeof str === 'string' ? str.slice(0, max) : '');
     
-    if (body.type === 'search' || body.mood) {
+    if (typeof body.prompt === 'string' && body.prompt.trim()) {
+      prompt = body.prompt;
+      if (typeof body.systemPrompt === 'string') {
+        systemPrompt = body.systemPrompt;
+      }
+      if (typeof body.isJson === 'boolean') {
+        isJson = body.isJson;
+      }
+    } else if (body.type === 'search' || body.mood) {
         const mood = sanitize(body.mood);
         const genre = sanitize(body.genre);
         const minYear = Number(body.minYear) || 1970;
@@ -102,6 +113,17 @@ export default async function handler(req, res) {
       };
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       authOptions.keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    } else {
+      const candidateKeyPaths = [
+        path.resolve(process.cwd(), '..', 'gen-lang-client-0579123407-0883ecb8fda7.json'),
+        path.resolve(process.cwd(), 'gen-lang-client-0579123407-0883ecb8fda7.json')
+      ];
+      for (const p of candidateKeyPaths) {
+        if (fs.existsSync(p)) {
+          authOptions.keyFilename = p;
+          break;
+        }
+      }
     }
 
     const location = process.env.GOOGLE_VERTEX_LOCATION || 'global';

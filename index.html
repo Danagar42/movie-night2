@@ -279,7 +279,7 @@
     <div id="hearts-container"></div>
 
     <!-- API Key Modal -->
-    <div id="apiModal" role="dialog" aria-modal="true" aria-labelledby="apiModalTitle" class="fixed inset-0 z-[150] flex items-center justify-center p-4 hidden">
+    <div id="apiModal" role="dialog" aria-modal="true" aria-labelledby="apiModalTitle" class="fixed inset-0 z-[150] flex items-center justify-center p-4 hidden" style="display: none !important;">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-xl"></div>
         <div class="bg-slate-900 border border-pink-500/30 p-8 rounded-[2.5rem] max-w-md w-full shadow-2xl relative z-10">
             <h2 id="apiModalTitle" class="text-2xl font-bold gradient-text mb-4 text-center">Налаштування ✨</h2>
@@ -1171,7 +1171,7 @@
             }
         }
 
-                async function callGemini(prompt, systemPrompt = "", isJson = true) {
+                async function callGemini(prompt, systemPrompt = "", isJson = true, silent = false) {
             try {
                 const res = await fetch('/api/recommend', {
                     method: 'POST',
@@ -1182,63 +1182,45 @@
                     const data = await res.json();
                     return data.text;
                 }
-                if (res.status !== 404 && res.status !== 502) {
-                    throw new Error(`Backend API error: ${res.status}`);
-                }
+                const errData = await res.json().catch(() => null);
+                throw new Error(errData?.error || `Сервер відповів з помилкою (${res.status})`);
             } catch (err) {
-                // Ignore network errors or 404/502, fallback to direct API
-            }
+                if (CURRENT_API_KEY && CURRENT_API_KEY.startsWith('AIza')) {
+                    let lastErrorMsg = "";
+                    for (const model of MODELS_TO_TRY) {
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${CURRENT_API_KEY}`;
+                        try {
+                            const bodyData = { contents: [{ parts: [{ text: prompt }] }] };
+                            if (systemPrompt) {
+                                bodyData.systemInstruction = { parts: [{ text: systemPrompt }] };
+                            }
+                            if (isJson) {
+                                bodyData.generationConfig = { responseMimeType: "application/json" };
+                            }
 
-            if (!CURRENT_API_KEY || !CURRENT_API_KEY.startsWith('AIza')) {
-                if (typeof apiModal !== 'undefined' && apiModal) {
-                    apiModal.classList.remove('hidden'); 
-                    setTimeout(() => trapFocus(apiModal), 100);
+                            const response = await fetchWithRetry(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(bodyData)
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                            }
+                            lastErrorMsg = `HTTP Error ${response.status}`;
+                        } catch (directErr) {
+                            lastErrorMsg = directErr.message;
+                        }
+                    }
+                    console.warn("Direct API fallback failed:", lastErrorMsg);
                 }
-                if (typeof showToast === 'function') showToast("Сервер тимчасово недоступний. Спробуй ще раз.");
-                throw new Error("Сервер тимчасово недоступний.");
-            }
-            
-            let lastErrorMsg = "";
-            let allNotFound = true;
 
-            for (const model of MODELS_TO_TRY) {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${CURRENT_API_KEY}`;
-                try {
-                    const bodyData = { contents: [{ parts: [{ text: prompt }] }] };
-                    if (systemPrompt) {
-                        bodyData.systemInstruction = { parts: [{ text: systemPrompt }] };
-                    }
-                    if (isJson) {
-                        bodyData.generationConfig = { responseMimeType: "application/json" };
-                    }
-
-                    const response = await fetchWithRetry(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(bodyData)
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        return data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    }
-
-                    if (response.status !== 404) {
-                        allNotFound = false; 
-                        lastErrorMsg = `HTTP Error ${response.status}`;
-                    }
-                } catch (err) { 
-                    lastErrorMsg = err.message; 
-                    if (!err.message.includes("404")) allNotFound = false;
+                if (!silent && typeof showToast === 'function') {
+                    showToast("Сервер тимчасово недоступний. Спробуй ще раз.");
                 }
+                throw err;
             }
-
-            if (allNotFound) {
-                resetApiKey(); 
-                throw new Error("Ключі API можуть бути недійсними.");
-            }
-
-            throw new Error("Помилка генерації: " + lastErrorMsg);
         }
         function triggerFrenchieEasterEgg() {
             const animTypes = ['rain', 'fountain', 'throw'];
@@ -1853,9 +1835,7 @@
             container.classList.remove('hidden');
         }
 
-        if (CURRENT_API_KEY) {
-            loadMovieOfTheDay();
-        }
+        loadMovieOfTheDay();
 
         function showSeasonalBanner() {
             const now = new Date();

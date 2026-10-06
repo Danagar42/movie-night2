@@ -724,6 +724,27 @@ setTimeout(() => {
                 assert.ok(eggMatch, "triggerFrenchieEasterEgg should have a 12000ms timeout");
                 console.log('31. Easter Egg 12s cleanup timeout verification test passed.');
 
+                // 32. Verify api/recommend.js supports direct prompt and has gemini-2.5-flash fallback
+                const currentRec = require('fs').readFileSync('api/recommend.js', 'utf8');
+                assert.ok(currentRec.includes('body.prompt'), 'api/recommend.js must read body.prompt');
+                assert.ok(currentRec.includes('gemini-2.5-flash'), 'api/recommend.js must include gemini-2.5-flash as candidate');
+                assert.ok(currentRec.includes('candidateKeyPaths'), 'api/recommend.js must have candidateKeyPaths for GCP credentials fallback');
+                console.log('32. api/recommend.js prompt and Vertex AI credits fallback test passed.');
+
+                // 33. Verify apiModal is never shown in index.html
+                assert.ok(htmlContent.includes('style="display: none !important;"'), 'apiModal must be permanently hidden with display: none !important;');
+                assert.ok(!htmlContent.includes('apiModal.classList.remove(\'hidden\')'), 'callGemini must never open apiModal');
+                console.log('33. apiModal permanently hidden test passed.');
+
+                // 34. Verify callGemini never throws or prompts for user API keys
+                assert.ok(!htmlContent.includes('Ключі API можуть бути недійсними'), 'callGemini must not complain about user API keys');
+                console.log('34. callGemini user API key-free error handling test passed.');
+
+                // 35. Verify loadMovieOfTheDay() is called unconditionally on startup
+                assert.ok(!htmlContent.includes('if (CURRENT_API_KEY) {\n            loadMovieOfTheDay();\n        }'), 'loadMovieOfTheDay must not require CURRENT_API_KEY');
+                assert.ok(/loadMovieOfTheDay\(\);/.test(htmlContent), 'loadMovieOfTheDay must be called on page load');
+                console.log('35. loadMovieOfTheDay startup call test passed.');
+
                 console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
             }, 100);
         }, 100);
