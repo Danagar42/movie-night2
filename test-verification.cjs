@@ -313,7 +313,7 @@ const htmlContent = require('fs').readFileSync('index.html', 'utf8');
 // 6.3 Roulette cubic deceleration and isSpinning
 assert.ok(htmlContent.includes('if (isSpinning) return;'), 'Should have isSpinning guard');
 assert.ok(htmlContent.includes('.movie-card:not(.grayscale)'), 'Should select not grayscale cards');
-assert.ok(htmlContent.includes('const totalSteps = cards.length * Math.max(1, Math.round(28 / cards.length)) + winnerIndex;'), 'Should have scaled deceleration formula');
+assert.ok(htmlContent.includes('const totalSteps = cards.length * Math.max(1, Math.round(14 / cards.length)) + winnerIndex;'), 'Should have scaled deceleration formula');
 console.log('6.3. Roulette cubic deceleration and isSpinning test passed.');
 
 // 6.4 Silent MOTD
@@ -889,20 +889,23 @@ setTimeout(() => {
                         targetGrid.querySelectorAll = () => [mockWinnerCard];
                         targetGrid.getBoundingClientRect = () => ({ top: 0 });
 
-                        let activeIntervalCb = null;
+                        const mockRouletteBtn = {
+                            disabled: false,
+                            innerHTML: '<span>Обери за мене</span>'
+                        };
+                        const origGetElementById = sandbox.document.getElementById;
+                        sandbox.document.getElementById = (id) => {
+                            if (id === 'rouletteBtn') return mockRouletteBtn;
+                            return origGetElementById(id);
+                        };
+
                         let activeTimeoutCb = null;
-                        const savedSetInterval = sandbox.setInterval;
+                        let lastTimeoutDelay = null;
                         const savedSetTimeout = sandbox.setTimeout;
 
-                        sandbox.setInterval = (cb) => {
-                            activeIntervalCb = cb;
-                            return 999;
-                        };
-                        sandbox.clearInterval = () => {
-                            activeIntervalCb = null;
-                        };
                         sandbox.setTimeout = (cb, delay) => {
                             activeTimeoutCb = cb;
+                            lastTimeoutDelay = delay;
                             return 888;
                         };
 
@@ -911,27 +914,39 @@ setTimeout(() => {
                             spinRoulette();
                         `, sandbox);
 
-                        // While spinning, isSpinning must be true
+                        // While spinning, isSpinning must be true and button disabled
                         assert.strictEqual(vm.runInContext('isSpinning', sandbox), true, 'isSpinning must be true while spinning');
+                        assert.strictEqual(mockRouletteBtn.disabled, true, 'rouletteBtn must be disabled while spinning');
+                        assert.ok(mockRouletteBtn.innerHTML.includes('Обираємо... ✨'), 'rouletteBtn text must show loading state');
 
                         // Calling spinRoulette while spinning must be ignored
                         vm.runInContext('spinRoulette();', sandbox);
                         assert.strictEqual(vm.runInContext('isSpinning', sandbox), true, 'Concurrent spinRoulette call must be blocked by isSpinning guard');
 
-                        // Step through animation
+                        // Step through animation steps until deceleration completes and winner modal timeout is scheduled (450ms)
                         let steps = 0;
-                        while (activeIntervalCb && steps < 100) {
-                            activeIntervalCb();
+                        while (activeTimeoutCb && steps < 100) {
+                            const cb = activeTimeoutCb;
+                            activeTimeoutCb = null;
+                            cb();
                             steps++;
+                            if (lastTimeoutDelay >= 450) {
+                                break;
+                            }
                         }
 
-                        // Trigger winner display completion timeout (2000ms)
+                        // Trigger winner display completion timeout (450ms)
                         assert.ok(activeTimeoutCb, 'Winner timeout must be scheduled after roulette deceleration completes');
+                        assert.strictEqual(lastTimeoutDelay, 450, 'Winner timeout delay should be 450ms');
+                        assert.strictEqual(vm.runInContext('isSpinning', sandbox), true, 'isSpinning must still be true before winner timeout executes');
+
                         activeTimeoutCb();
 
                         assert.strictEqual(vm.runInContext('isSpinning', sandbox), false, 'isSpinning must be reset to false after roulette spin and winner display');
+                        assert.strictEqual(mockRouletteBtn.disabled, false, 'rouletteBtn must be re-enabled after modal opens');
+                        assert.strictEqual(mockRouletteBtn.innerHTML, '<span>Обери за мене</span>', 'rouletteBtn text must be restored');
 
-                        sandbox.setInterval = savedSetInterval;
+                        sandbox.document.getElementById = origGetElementById;
                         sandbox.setTimeout = savedSetTimeout;
                         console.log('38. isSpinning flag behavior test passed.');
 
