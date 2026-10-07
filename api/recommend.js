@@ -16,6 +16,17 @@ const MAX_REQUESTS_PER_WINDOW = 30;
 
 function checkRateLimit(ip) {
   const now = Date.now();
+  if (rateLimitMap.size > 500) {
+    for (const [key, val] of rateLimitMap.entries()) {
+      if (now > val.resetTime) {
+        rateLimitMap.delete(key);
+      }
+    }
+    if (rateLimitMap.size > 1000) {
+      rateLimitMap.clear();
+    }
+  }
+
   if (!rateLimitMap.has(ip)) {
     rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
     return true;
@@ -124,6 +135,10 @@ export default async function handler(req, res) {
           break;
         }
       }
+    }
+
+    if (Object.keys(authOptions).length === 0) {
+      console.warn('[Vertex AI Auth] Warning: No service account credentials configured (GOOGLE_CLIENT_EMAIL/GOOGLE_PRIVATE_KEY) and no candidateKeyPaths found.');
     }
 
     const location = process.env.GOOGLE_VERTEX_LOCATION || 'global';

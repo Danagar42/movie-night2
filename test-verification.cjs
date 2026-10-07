@@ -85,11 +85,15 @@ const sandbox = {
     encodeURIComponent: encodeURIComponent,
     decodeURIComponent: decodeURIComponent,
     URLSearchParams: URLSearchParams,
+    history: { pushState: () => {}, back: () => {}, state: null },
+    requestAnimationFrame: (cb) => cb(),
     navigator: {}
 };
 
 sandbox.window.document = sandbox.document;
 sandbox.window.localStorage = sandbox.localStorage;
+sandbox.window.history = sandbox.history;
+sandbox.window.requestAnimationFrame = sandbox.requestAnimationFrame;
 
 vm.createContext(sandbox);
 
@@ -745,7 +749,200 @@ setTimeout(() => {
                 assert.ok(/loadMovieOfTheDay\(\);/.test(htmlContent), 'loadMovieOfTheDay must be called on page load');
                 console.log('35. loadMovieOfTheDay startup call test passed.');
 
-                console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+                // 36. Runtime openMovieModal without errors & offline fallback
+                let modalContentHTML = '';
+                const savedGetElementById36 = sandbox.document.getElementById;
+                sandbox.document.getElementById = function(id) {
+                    if (id === 'movieModalContent') {
+                        return {
+                            set innerHTML(val) { modalContentHTML = val; },
+                            get innerHTML() { return modalContentHTML; },
+                            classList: { add: () => {}, remove: () => {} }
+                        };
+                    }
+                    if (id === 'movieModal') {
+                        return {
+                            classList: { add: () => {}, remove: () => {} },
+                            querySelectorAll: () => [],
+                            addEventListener: () => {}
+                        };
+                    }
+                    return savedGetElementById36(id);
+                };
+
+                sandbox.fetch = async (url) => {
+                    if (url.includes('/movie/777')) {
+                        return {
+                            ok: true,
+                            json: async () => ({
+                                id: 777,
+                                title: 'Тестовий Фільм',
+                                original_title: 'Test Movie',
+                                overview: 'Опис фільму без жодних збоїв.',
+                                release_date: '2026-02-14',
+                                vote_average: 8.8,
+                                genres: [{ id: 18, name: 'Драма' }],
+                                videos: { results: [{ type: 'Trailer', key: 'trailer123', iso_639_1: 'uk' }] }
+                            })
+                        };
+                    }
+                    throw new Error('Network error (offline simulation)');
+                };
+
+                vm.runInContext(`
+                    movieDataStore[777] = { id: 777, title_ua: 'Тестовий Фільм', poster: 'https://test.jpg' };
+                    openMovieModal(777);
+                `, sandbox);
+
+                setTimeout(() => {
+                    assert.ok(modalContentHTML.includes('modal-fav-btn'), 'modal-fav-btn must be present in openMovieModal');
+                    assert.ok(modalContentHTML.includes('toggleFavoriteModal(777'), 'toggleFavoriteModal must receive id 777');
+                    assert.ok(modalContentHTML.includes('Тестовий Фільм'), 'Ukrainian title must be rendered');
+                    assert.ok(!modalContentHTML.includes('undefined'), 'HTML must not contain literal undefined');
+
+                    // 36b. Offline fallback check
+                    vm.runInContext(`
+                        movieDataStore[778] = { id: 778, title_ua: 'Офлайн Фільм', title_en: 'Offline', year: '2024', genre: 'Комедія', rating: '7.5', poster: 'https://off.jpg', plot: 'Офлайн опис' };
+                        openMovieModal(778);
+                    `, sandbox);
+
+                    setTimeout(() => {
+                        assert.ok(modalContentHTML.includes('Офлайн-режим'), 'openMovieModal must render offline fallback');
+                        assert.ok(modalContentHTML.includes('Офлайн Фільм'), 'openMovieModal offline must show movie title');
+                        console.log('36. runtime openMovieModal and offline fallback test passed.');
+
+                        // 37. Full backup round-trip with genre/rating/plot
+                        sandbox.FileReader = class {
+                            readAsText(file) { this.onload({ target: { result: file.content } }); }
+                        };
+                        const backupData = {
+                            favorites: [{
+                                id: 888,
+                                title_ua: 'Улюблений Фільм',
+                                title_en: 'Favorite Movie',
+                                year: '2025',
+                                genre: 'Фантастика',
+                                rating: '9.1',
+                                poster: 'https://posters/fav.jpg',
+                                plot: 'Глибокий сюжет про космос'
+                            }],
+                            watchedMovies: [{
+                                id: 889,
+                                title_ua: 'Переглянутий Фільм',
+                                title_en: 'Watched Movie',
+                                year: '2023',
+                                genre: 'Драма',
+                                rating: '8.4',
+                                poster: 'https://posters/watched.jpg',
+                                plot: 'Драматичний сюжет'
+                            }]
+                        };
+
+                        vm.runInContext(`
+                            importDataBackup({ target: { files: [{ content: JSON.stringify(${JSON.stringify(backupData)}) }] } });
+                        `, sandbox);
+
+                        const importedFav = vm.runInContext('favorites.find(f => f.id === 888)', sandbox);
+                        assert.ok(importedFav, 'Imported movie 888 must exist in favorites');
+                        assert.strictEqual(importedFav.genre, 'Фантастика', 'genre must be preserved in backup cycle');
+                        assert.strictEqual(importedFav.rating, '9.1', 'rating must be preserved in backup cycle');
+                        assert.strictEqual(importedFav.plot, 'Глибокий сюжет про космос', 'plot must be preserved in backup cycle');
+
+                        const importedWatched = vm.runInContext('watchedMovies.find(w => w.id === 889)', sandbox);
+                        assert.ok(importedWatched, 'Imported movie 889 must exist in watched');
+                        assert.strictEqual(importedWatched.genre, 'Драма', 'watched genre must be preserved in backup cycle');
+
+                        // Also verify backup with missing genre/rating uses safe defaults
+                        const partialBackup = {
+                            favorites: [{
+                                id: 990,
+                                title_ua: 'Старий Фільм',
+                                title_en: 'Old Movie',
+                                poster: 'https://posters/old.jpg'
+                            }],
+                            watchedMovies: []
+                        };
+                        vm.runInContext(`
+                            importDataBackup({ target: { files: [{ content: JSON.stringify(${JSON.stringify(partialBackup)}) }] } });
+                        `, sandbox);
+                        const importedOld = vm.runInContext('favorites.find(f => f.id === 990)', sandbox);
+                        assert.ok(importedOld, 'Old partial backup movie must be imported successfully');
+                        assert.strictEqual(importedOld.genre, 'Кіно', 'Old movie should get safe default genre');
+                        assert.strictEqual(importedOld.rating, '—', 'Old movie should get safe default rating');
+                        console.log('37. full backup cycle with genre/rating/plot test passed.');
+
+                        // 38. isSpinning flag behavior
+                        const initialSpinning = vm.runInContext('isSpinning', sandbox);
+                        assert.strictEqual(initialSpinning, false, 'isSpinning should initially be false');
+
+                        const targetGrid = vm.runInContext('resultsGrid', sandbox);
+                        targetGrid.querySelectorAll = () => [];
+                        vm.runInContext('spinRoulette();', sandbox);
+                        assert.strictEqual(vm.runInContext('isSpinning', sandbox), false, 'isSpinning must remain false when no cards available');
+
+                        // When cards are available, test full spinning lifecycle
+                        const mockWinnerCard = {
+                            id: 'movie-card-550',
+                            classList: { add: () => {}, remove: () => {} },
+                            scrollIntoView: () => {}
+                        };
+                        targetGrid.querySelectorAll = () => [mockWinnerCard];
+                        targetGrid.getBoundingClientRect = () => ({ top: 0 });
+
+                        let activeIntervalCb = null;
+                        let activeTimeoutCb = null;
+                        const savedSetInterval = sandbox.setInterval;
+                        const savedSetTimeout = sandbox.setTimeout;
+
+                        sandbox.setInterval = (cb) => {
+                            activeIntervalCb = cb;
+                            return 999;
+                        };
+                        sandbox.clearInterval = () => {
+                            activeIntervalCb = null;
+                        };
+                        sandbox.setTimeout = (cb, delay) => {
+                            activeTimeoutCb = cb;
+                            return 888;
+                        };
+
+                        vm.runInContext(`
+                            movieDataStore[550] = { id: 550, title_ua: 'Бійцівський клуб', poster: 'https://test.jpg' };
+                            spinRoulette();
+                        `, sandbox);
+
+                        // While spinning, isSpinning must be true
+                        assert.strictEqual(vm.runInContext('isSpinning', sandbox), true, 'isSpinning must be true while spinning');
+
+                        // Calling spinRoulette while spinning must be ignored
+                        vm.runInContext('spinRoulette();', sandbox);
+                        assert.strictEqual(vm.runInContext('isSpinning', sandbox), true, 'Concurrent spinRoulette call must be blocked by isSpinning guard');
+
+                        // Step through animation
+                        let steps = 0;
+                        while (activeIntervalCb && steps < 100) {
+                            activeIntervalCb();
+                            steps++;
+                        }
+
+                        // Trigger winner display completion timeout (2000ms)
+                        assert.ok(activeTimeoutCb, 'Winner timeout must be scheduled after roulette deceleration completes');
+                        activeTimeoutCb();
+
+                        assert.strictEqual(vm.runInContext('isSpinning', sandbox), false, 'isSpinning must be reset to false after roulette spin and winner display');
+
+                        sandbox.setInterval = savedSetInterval;
+                        sandbox.setTimeout = savedSetTimeout;
+                        console.log('38. isSpinning flag behavior test passed.');
+
+                        // 39. Copyright date 06.01.2026 check
+                        assert.ok(htmlContent.includes('&copy; 06.01.2026'), 'Footer copyright must be 06.01.2026');
+                        assert.ok(!htmlContent.includes('&copy; 01.06.2026'), 'Old incorrect copyright 01.06.2026 must not exist');
+                        console.log('39. copyright 06.01.2026 test passed.');
+
+                        console.log("ALL VERIFIER TESTS PASSED SUCCESSFULLY");
+                    }, 50);
+                }, 50);
             }, 100);
         }, 100);
     }, 100);

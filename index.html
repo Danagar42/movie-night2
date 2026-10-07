@@ -9,9 +9,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Вечір кіно">
-    <link rel="apple-touch-icon" href="https://via.placeholder.com/180x180/f472b6/ffffff?text=%E2%9D%A4%EF%B8%8F">
+    <link rel="apple-touch-icon" href="./icons/icon-180.png">
     <meta name="theme-color" content="#0f172a">
-    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22%D0%92%D0%B5%D1%87%D1%96%D1%80%20%D0%BA%D1%96%D0%BD%D0%BE%20%D0%B2%20%D0%90%D0%BD%D1%96%22%2C%22short_name%22%3A%22%D0%92%D0%B5%D1%87%D1%96%D1%80%20%D0%BA%D1%96%D0%BD%D0%BE%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%230f172a%22%7D">
+    <link rel="manifest" href="./manifest.webmanifest">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Lora:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Onest:wght@300;400;500;600;700&display=swap">
@@ -326,7 +326,7 @@
     </div>
 
     <!-- МОДАЛКА ДЛЯ ВІДЕОПЛЕЄРА (Trailer) -->
-    <div id="videoModal" role="dialog" aria-modal="true" aria-labelledby="videoModalTitle" class="fixed inset-0 z-[130] hidden items-center justify-center p-4 bg-black/95 opacity-0 transition-opacity duration-300">
+    <div id="videoModal" role="dialog" aria-modal="true" aria-labelledby="videoModalTitle" onclick="if(event.target === this) closeVideoModal()" class="fixed inset-0 z-[130] hidden items-center justify-center p-4 bg-black/95 opacity-0 transition-opacity duration-300">
         <button onclick="closeVideoModal()" class="absolute top-4 right-4 md:top-8 md:right-8 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/50 hover:text-white active:scale-90 text-5xl transition-all"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         <div class="w-full max-w-6xl aspect-video rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/10">
             <iframe id="videoIframe" class="w-full h-full" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
@@ -427,7 +427,7 @@
                     <button type="button" onclick="searchByTaste()" id="tasteChip" class="text-xs min-h-[44px] bg-gradient-to-r from-pink-500/20 to-indigo-500/20 hover:from-pink-500/30 hover:to-indigo-500/30 text-white px-4 py-2 rounded-full border border-pink-500/30 active:scale-95 transition-all font-medium shadow-sm shadow-pink-500/10">💖 На мій смак</button>
                     <button type="button" onclick="searchByMood('Щось романтичне та ніжне для вечора удвох')" class="text-xs bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 px-3 py-2 rounded-full border border-pink-500/20 active:scale-95 transition-all">🥰 Романтика</button>
                     <button type="button" onclick="searchByMood('Легка весела комедія щоб посміятися від душі')" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 px-3 py-2 rounded-full border border-amber-500/20 active:scale-95 transition-all">😂 Посміятися</button>
-                    <button type="button" onclick="searchByMood('Щось моторошне та напружене, тримає в напрузі')" class="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 px-3 py-2 rounded-full border border-emerald-500/20 active:scale-95 transition-all">😱 Помочити нерви</button>
+                    <button type="button" onclick="searchByMood('Щось моторошне та напружене, тримає в напрузі')" class="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 px-3 py-2 rounded-full border border-emerald-500/20 active:scale-95 transition-all">😱 Полоскотати нерви</button>
                     <button type="button" onclick="searchByMood('Затишне, тепле кіно яке обіймає душу')" class="text-xs bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 px-3 py-2 rounded-full border border-orange-500/20 active:scale-95 transition-all">☕ Затишно</button>
                     <button type="button" onclick="searchByMood('Фантастика або фентезі з неймовірними світами')" class="text-xs bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 px-3 py-2 rounded-full border border-violet-500/20 active:scale-95 transition-all">🚀 Пригоди</button>
                     <button type="button" onclick="searchByMood('Глибоке, задумливе кіно зі змістом, після якого хочеться думати')" class="text-xs bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 px-3 py-2 rounded-full border border-cyan-500/20 active:scale-95 transition-all">🧠 Задумливе</button>
@@ -478,10 +478,10 @@
                 <input type="file" accept=".json" class="hidden" onchange="importDataBackup(event)">
             </label>
         </div>
-        <div class="flex flex-col items-center gap-2">
-            <span class="text-slate-400 text-sm">Зроблено з любов'ю до Тебе</span>
-            <span class="text-3xl select-none transition-transform hover:scale-125 inline-block py-1" style="font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;" aria-label="Любов">🫶</span>
-            <span class="text-xs text-slate-500">&copy; 01.06.2026</span>
+        <div class="flex flex-col items-center gap-1.5">
+            <span class="text-slate-400 text-sm font-medium tracking-wide">Зроблено з любов'ю до Тебе</span>
+            <span role="img" class="text-4xl sm:text-5xl select-none transition-transform duration-300 hover:scale-110 active:scale-95 inline-block py-1 leading-none cursor-default filter drop-shadow-sm" style="font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;" aria-label="Любов">🫶</span>
+            <span class="text-xs text-slate-500 tracking-wider">&copy; 06.01.2026</span>
         </div>
     </footer>
 
@@ -653,6 +653,7 @@
         let currentLoaderInterval;
         let movieDataStore = {}; // Глобальне сховище для фільмів
         window.currentSimilarMovies = [];
+        let isSpinning = false;
         // --- Стан пошуку для «Завантажити ще» ---
         let currentSearchState = {
             query: '',
@@ -1002,7 +1003,7 @@
         function renderWatchedList() {
             const list = document.getElementById('watchedList');
             if (watchedMovies.length === 0) {
-                list.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center opacity-60 mt-10"><span class="text-6xl mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></span><p class="text-slate-300 font-medium">Ти ще нічого не відмітив(ла)...</p></div>`;
+                list.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center opacity-60 mt-10"><span class="text-6xl mb-4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg></span><p class="text-slate-300 font-medium">Ти ще нічого не відмітила...</p></div>`;
                 return;
             }
             // Показуємо найновіші спочатку
@@ -1233,7 +1234,7 @@
             for (let i = 0; i < numberOfDogs; i++) {
                 const el = document.createElement('img');
                 const randomDogIndex = Math.floor(Math.random() * 12) + 1;
-                el.src = `Ф/Ф (${randomDogIndex}).png`; 
+                el.src = `assets/dogs/philip-${randomDogIndex}.png`; 
                 
                 el.className = 'frenchie-anim rounded-full';
                 
@@ -1287,7 +1288,7 @@
             setTimeout(() => {
                 const finalImg = document.createElement('img');
                 const randomFinalDogIndex = Math.floor(Math.random() * 12) + 1;
-                finalImg.src = `Ф/Ф (${randomFinalDogIndex}).png`;
+                finalImg.src = `assets/dogs/philip-${randomFinalDogIndex}.png`;
                 finalImg.className = 'final-frenchie shadow-2xl rounded-3xl';
                 finalImg.onerror = function() { this.remove(); };
                 document.body.appendChild(finalImg);
@@ -1309,9 +1310,9 @@
 
             return `
                 <div id="movie-card-${id}" class="movie-card border border-white/5 rounded-[1.5rem] overflow-hidden flex flex-col h-full movie-card-anim relative cursor-pointer group aspect-[2/3] ${cardOpacity}" style="animation-delay: ${index * 80}ms" onclick="openMovieModal(${id})">
-                    <button id="fav-btn-${id}" onclick="event.stopPropagation(); toggleFavorite(this, '${movieDataForStorage}')" class="absolute top-3 left-3 z-20 text-xl ${heartClass} hover:scale-110 active:scale-90 hover:text-pink-400 transition-all filter drop-shadow-lg bg-black/40 rounded-full w-9 h-9 flex items-center justify-center backdrop-blur-md border border-white/10">${heartIcon}</button>
+                    <button id="fav-btn-${id}" onclick="event.stopPropagation(); toggleFavorite(this, '${movieDataForStorage}')" class="absolute top-3 left-3 z-20 text-xl ${heartClass} hover:scale-110 active:scale-90 hover:text-pink-400 transition-all filter drop-shadow-lg bg-black/40 rounded-full min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center backdrop-blur-md border border-white/10">${heartIcon}</button>
                     
-                    <button id="watch-btn-${id}" onclick="event.stopPropagation(); toggleWatched(this, '${movieDataForStorage}', ${id})" class="absolute top-3 left-14 z-20 text-xl ${watchedClass} hover:scale-110 active:scale-90 hover:text-indigo-400 transition-all filter drop-shadow-lg rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center backdrop-blur-md border" title="Відмітити як переглянуте">${ICONS.check}</button>
+                    <button id="watch-btn-${id}" onclick="event.stopPropagation(); toggleWatched(this, '${movieDataForStorage}', ${id})" class="absolute top-3 left-16 z-20 text-xl ${watchedClass} hover:scale-110 active:scale-90 hover:text-indigo-400 transition-all filter drop-shadow-lg rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center backdrop-blur-md border" title="Відмітити як переглянуте">${ICONS.check}</button>
 
                     ${rating !== 'N/A' && rating !== '0.0' ? `<div class="absolute top-3 right-3 z-20 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-pink-300 font-bold text-xs shadow-lg border border-white/10">${ICONS.star} ${rating}</div>` : ''}
                     
@@ -1337,19 +1338,22 @@
                 movieDataStore[m.id] = m; 
                 const isFav = favorites.some(fav => (fav.id || fav.imdbID) == m.id);
                 const isWatched = watchedMovies.some(w => (w.id || w.imdbID) == m.id);
-                const storageStr = encodeURIComponent(JSON.stringify({ id: m.id, title_ua: m.title_ua, title_en: m.title_en, year: m.year, poster: m.poster })).replace(/'/g, '%27');
+                const storageStr = encodeURIComponent(JSON.stringify({ id: m.id, title_ua: m.title_ua, title_en: m.title_en, year: m.year, genre: m.genre || 'Кіно', rating: m.rating || 'N/A', poster: m.poster, plot: m.plot || '' })).replace(/'/g, '%27');
                 return generateMovieCardHtml(m.id, index, m.title_ua, m.year, m.genre, m.poster, m.rating, storageStr, isFav, isWatched);
             }).join('');
         }
 
         async function openMovieModal(id) {
-    pushModalState('movieModal');
+            pushModalState('movieModal');
             const modal = document.getElementById('movieModal');
             const content = document.getElementById('movieModalContent');
-            const movie = movieDataStore[id];
+            const movie = movieDataStore[id] || favorites.find(f => (f.id || f.imdbID) == id) || watchedMovies.find(w => (w.id || w.imdbID) == id) || { id: id, title_ua: 'Фільм', title_en: '', poster: '' };
             
             modal.classList.remove('hidden'); modal.classList.add('flex');
-            requestAnimationFrame(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); });
+            requestAnimationFrame(() => { 
+                modal.classList.remove('opacity-0'); 
+                content.classList.remove('scale-95'); 
+            });
             
             content.innerHTML = `<div class="p-20 w-full flex justify-center"><div class="custom-loader w-12 h-12 rounded-full"></div></div>`;
 
@@ -1381,12 +1385,27 @@
                 ); window.currentSimilarSourceTitle = movie.title_ua || details.title;
 
                 const plot = (details.overview && details.overview.trim().length > 10) ? details.overview : (movie.plot || "Опис відсутній.");
-                const safeTitleEn = (movie.title_en || details.original_title).replace(/"/g, '&quot;');
+                const rawTitleEn = movie.title_en || details.original_title || movie.title_ua || '';
+                const safeTitleEn = escapeHtml(rawTitleEn);
                 
-                const isWatchedModal = watchedMovies.some(w => w.id == movie.id);
+                const isFav = favorites.some(fav => (fav.id || fav.imdbID) == movie.id);
+                const isWatchedModal = watchedMovies.some(w => (w.id || w.imdbID) == movie.id);
                 const watchedBtnText = isWatchedModal ? ICONS.close + " Не бачила" : ICONS.eye(true) + " Вже бачила";
                 const watchedBtnClass = isWatchedModal ? "bg-slate-700 text-white border-slate-600" : "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border-indigo-500/30";
-                const storageStr = encodeURIComponent(JSON.stringify({ id: movie.id, title_ua: movie.title_ua || details.title, title_en: safeTitleEn, year: movie.year || (details.release_date ? details.release_date.split('-')[0] : 'N/A'), poster: movie.poster })).replace(/'/g, '%27');
+                const movieYear = movie.year || (details.release_date ? details.release_date.split('-')[0] : 'N/A');
+                const movieGenre = (details.genres && details.genres.length > 0) ? details.genres[0].name : (movie.genre || 'Кіно');
+                const movieRating = details.vote_average != null ? details.vote_average.toFixed(1) : (movie.rating || 'N/A');
+                
+                const storageStr = encodeURIComponent(JSON.stringify({ 
+                    id: movie.id, 
+                    title_ua: movie.title_ua || details.title, 
+                    title_en: rawTitleEn, 
+                    year: movieYear, 
+                    genre: movieGenre, 
+                    rating: movieRating, 
+                    poster: movie.poster, 
+                    plot: plot 
+                })).replace(/'/g, '%27');
 
                 content.innerHTML = `
                     <div class="absolute inset-0 bg-cover bg-center opacity-40 transition-opacity duration-1000" style="background-image: url('${backdropUrl}')"></div>
@@ -1399,21 +1418,21 @@
                             <img src="${movie.poster}" class="w-full rounded-2xl shadow-2xl border border-white/10" alt="Poster">
                         </div>
                         <div class="flex-grow flex flex-col justify-center">
-                            ${logoPath ? `<img src="https://image.tmdb.org/t/p/w500${logoPath}" class="h-16 md:h-28 object-contain object-left mb-6 filter drop-shadow-lg" alt="${movie.title_ua}">` : `<h2 class="text-3xl md:text-5xl font-bold mb-4 text-white">${movie.title_ua || details.title}</h2>`}
+                            ${logoPath ? `<img src="https://image.tmdb.org/t/p/w500${logoPath}" class="h-16 md:h-28 object-contain object-left mb-6 filter drop-shadow-lg" alt="${escapeHtml(movie.title_ua || details.title)}">` : `<h2 class="text-3xl md:text-5xl font-bold mb-4 text-white">${escapeHtml(movie.title_ua || details.title)}</h2>`}
                             
                             <div class="flex flex-wrap gap-3 mb-6 items-center">
-                                <span class="bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-xs font-bold border border-pink-500/20">${movie.year || (details.release_date ? details.release_date.split('-')[0] : 'N/A')}</span>
+                                <span class="bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-xs font-bold border border-pink-500/20">${escapeHtml(movieYear)}</span>
                                 <span class="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-bold border border-indigo-500/20">${ICONS.star} ${details.vote_average?.toFixed(1) || 'N/A'}</span>
-                                <span class="text-slate-400 text-sm font-medium">${details.genres?.map(g => g.name).join(', ') || ''}</span>
+                                <span class="text-slate-400 text-sm font-medium">${details.genres?.map(g => escapeHtml(g.name)).join(', ') || ''}</span>
                             </div>
 
                             <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-3xl">${escapeHtml(plot)}</p>
 
                             <div id="modalButtons" class="flex flex-wrap gap-4 mt-auto">
-                                ${trailerKey ? `<button id="modal-fav-btn" onclick="toggleFavoriteModal(${movieObj.id}, '${storageStr}')" class="bg-white/10 hover:bg-white/20 text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-bold active:scale-95 transition-all flex items-center gap-2 text-sm md:text-base">
-                                ${isFav ? ICONS.heart(true) + " Збережено" : ICONS.heart(false) + " Зберегти"}
-                            </button>
-                            <button onclick="openVideoModal('${trailerKey}')" class="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)]"><span>${ICONS.play}</span> Трейлер</button>` : `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(safeTitleEn + ' official trailer')}" target="_blank" class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 active:scale-95 transition-colors flex items-center gap-2"><span>${ICONS.play}</span> YouTube</a>`}
+                                <button id="modal-fav-btn" onclick="toggleFavoriteModal(${movie.id}, '${storageStr}')" class="bg-white/10 hover:bg-white/20 text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-bold active:scale-95 transition-all flex items-center gap-2 text-sm md:text-base">
+                                    ${isFav ? ICONS.heart(true) + " Збережено" : ICONS.heart(false) + " Зберегти"}
+                                </button>
+                                ${trailerKey ? `<button onclick="openVideoModal('${trailerKey}')" class="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.3)]"><span>${ICONS.play}</span> Трейлер</button>` : `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(rawTitleEn + ' official trailer')}" target="_blank" class="bg-white/10 text-white px-6 py-3 rounded-full font-bold hover:bg-white/20 active:scale-95 transition-colors flex items-center gap-2"><span>${ICONS.play}</span> YouTube</a>`}
                                 
                                 <button onclick="toggleWatchedModal(${movie.id}, '${storageStr}')" id="modal-watch-btn" class="${watchedBtnClass} px-6 py-3 rounded-full font-bold active:scale-95 transition-all border flex items-center gap-2">${watchedBtnText}</button>
                                 
@@ -1424,8 +1443,63 @@
                         </div>
                     </div>
                 `;
+                trapFocus(modal);
             } catch (err) {
-                console.error(err); content.innerHTML = `<div class="p-10 text-center text-red-400">Помилка завантаження. Спробуйте ще раз.</div>`;
+                console.error(err);
+                if (movie && (movie.title_ua || movie.title_en)) {
+                    const isFav = favorites.some(fav => (fav.id || fav.imdbID) == movie.id);
+                    const isWatchedModal = watchedMovies.some(w => (w.id || w.imdbID) == movie.id);
+                    const watchedBtnText = isWatchedModal ? ICONS.close + " Не бачила" : ICONS.eye(true) + " Вже бачила";
+                    const watchedBtnClass = isWatchedModal ? "bg-slate-700 text-white border-slate-600" : "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border-indigo-500/30";
+                    const rawOfflineTitleEn = movie.title_en || movie.original_title || movie.title_ua || '';
+                    const safeTitleEn = escapeHtml(rawOfflineTitleEn);
+                    const storageStr = encodeURIComponent(JSON.stringify({
+                        id: movie.id,
+                        title_ua: movie.title_ua || movie.title || 'Фільм',
+                        title_en: rawOfflineTitleEn,
+                        year: movie.year || 'N/A',
+                        genre: movie.genre || 'Кіно',
+                        rating: movie.rating || 'N/A',
+                        poster: movie.poster || '',
+                        plot: movie.plot || ''
+                    })).replace(/'/g, '%27');
+
+                    content.innerHTML = `
+                        <div class="absolute inset-0 bg-cover bg-center opacity-40 transition-opacity duration-1000" style="background-image: url('${movie.poster || ''}')"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent md:bg-gradient-to-r md:from-slate-900 md:via-slate-900/95 md:to-transparent"></div>
+                        
+                        <button onclick="closeMovieModal()" class="absolute top-4 right-4 z-20 bg-black/40 hover:bg-white/20 active:scale-90 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+
+                        <div class="relative z-10 w-full p-6 md:p-12 flex flex-col md:flex-row gap-8 max-h-[90vh] overflow-y-auto custom-scroll" style="-webkit-overflow-scrolling: touch;">
+                            <div class="flex-shrink-0 w-32 md:w-64 mx-auto md:mx-0 hidden md:block">
+                                <img src="${movie.poster || ''}" class="w-full rounded-2xl shadow-2xl border border-white/10" alt="Poster">
+                            </div>
+                            <div class="flex-grow flex flex-col justify-center">
+                                <div class="inline-flex items-center gap-2 mb-2 text-xs text-amber-300/80 bg-amber-500/10 px-3 py-1 rounded-full w-fit border border-amber-500/20"><span>📡</span> Офлайн-режим (збережені дані)</div>
+                                <h2 class="text-3xl md:text-5xl font-bold mb-4 text-white">${escapeHtml(movie.title_ua || movie.title_en)}</h2>
+                                
+                                <div class="flex flex-wrap gap-3 mb-6 items-center">
+                                    <span class="bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-xs font-bold border border-pink-500/20">${escapeHtml(movie.year || 'N/A')}</span>
+                                    <span class="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-bold border border-indigo-500/20">${ICONS.star} ${escapeHtml(movie.rating || 'N/A')}</span>
+                                    <span class="text-slate-400 text-sm font-medium">${escapeHtml(movie.genre || 'Кіно')}</span>
+                                </div>
+
+                                <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-3xl">${escapeHtml(movie.plot || "Опис збереженого фільму.")}</p>
+
+                                <div id="modalButtons" class="flex flex-wrap gap-4 mt-auto">
+                                    <button id="modal-fav-btn" onclick="toggleFavoriteModal(${movie.id}, '${storageStr}')" class="bg-white/10 hover:bg-white/20 text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-bold active:scale-95 transition-all flex items-center gap-2 text-sm md:text-base">
+                                        ${isFav ? ICONS.heart(true) + " Збережено" : ICONS.heart(false) + " Зберегти"}
+                                    </button>
+                                    <button onclick="toggleWatchedModal(${movie.id}, '${storageStr}')" id="modal-watch-btn" class="${watchedBtnClass} px-6 py-3 rounded-full font-bold active:scale-95 transition-all border flex items-center gap-2">${watchedBtnText}</button>
+                                    <button data-title="${safeTitleEn}" onclick="getAiCritique(this.dataset.title, this)" class="bg-pink-500/10 text-pink-300 px-6 py-3 rounded-full font-bold hover:bg-pink-500/20 active:scale-95 transition-all border border-pink-500/30 flex items-center gap-2"><span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span> Враження друга ✨</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    trapFocus(modal);
+                } else {
+                    content.innerHTML = `<div class="p-10 text-center text-red-400">Помилка завантаження. Спробуйте ще раз.</div>`;
+                }
             }
         }
 
@@ -1439,7 +1513,10 @@
             const iframe = document.getElementById('videoIframe');
             iframe.src = `https://www.youtube.com/embed/${key}?autoplay=1`;
             modal.classList.remove('hidden'); modal.classList.add('flex');
-            requestAnimationFrame(() => modal.classList.remove('opacity-0'));
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                trapFocus(modal);
+            });
         }
 
         function closeVideoModal() {
@@ -1450,7 +1527,7 @@
             const originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="animate-spin inline-block"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline-block"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>`;
             try {
                 const profile = getUserTasteProfile();
-                const tasteCtx = profile ? ` Ані любить: ${profile.topGenres.join(', ')}.` : '';
+                const tasteCtx = (profile && profile.topGenres && profile.topGenres.length > 0) ? ` Ані любить: ${profile.topGenres.join(', ')}.` : '';
                 let critique = await callGemini(`Ти - кращий друг Ані.${tasteCtx} Напиши милий та влучний коментар про фільм "${movieTitle}" українською мовою — чому саме Ані може сподобатися цей фільм. Тільки 1 коротке речення.`, "", false);
                 critique = critique.replace(/^["'\s]+|["'\s]+$/g, '');
                 
@@ -1498,7 +1575,7 @@
                     
                     const isFav = favorites.some(fav => (fav.id || fav.imdbID) == detailedData.id);
                     const isWatched = watchedMovies.some(w => (w.id || w.imdbID) == detailedData.id);
-                    const storageStr = encodeURIComponent(JSON.stringify({ id: detailedData.id, title_ua: detailedData.title, title_en: detailedData.original_title, year: releaseYear, poster: posterUrl })).replace(/'/g, '%27');
+                    const storageStr = encodeURIComponent(JSON.stringify({ id: detailedData.id, title_ua: detailedData.title, title_en: detailedData.original_title, year: releaseYear, genre: firstGenre, rating: rating, poster: posterUrl, plot: detailedData.overview || '' })).replace(/'/g, '%27');
                     
                     const cardHtml = generateMovieCardHtml(detailedData.id, i, detailedData.title, releaseYear, firstGenre, posterUrl, rating, storageStr, isFav, isWatched);
                     if (skeletonCards[i]) skeletonCards[i].outerHTML = cardHtml;
@@ -1561,7 +1638,7 @@
 НЕ ВКЛЮЧАЙ ці фільми (вже відомі): ${uniqueKnownTitles.slice(0, 50).join(', ')}.`
                     : '';
 
-                const systemPrompt = `Ти - професійний кіноман. Поверни суворий JSON масив з 15 об'єктів. Схема: [{"title_en": "String", "title_ua": "String", "plot": "Опис сюжету обов'язково УКРАЇНСЬКОЮ мовою"}]. Нічого крім JSON.`;
+                const systemPrompt = `Ти - професійний кіноман. Поверни суворий JSON масив з 15 об'єктів. Схема: [{"title_en": "String", "title_ua": "String", "year": "Рік випуску (YYYY)", "plot": "Опис сюжету обов'язково УКРАЇНСЬКОЮ мовою"}]. Нічого крім JSON.`;
 
                 const rawResponse = await callGemini(
                     `Запит: ${query}. Жанр: ${genre}. Роки: ${minYear} - ${maxYear}.${excludeStr}`,
@@ -1594,6 +1671,7 @@
 
                 const finalFetchedMovies = [];
                 let displayedCount = 0; let tmdbErrorsCount = 0; let skippedByYear = 0;
+                let actualSeenCount = 0;
 
                 for (let i = 0; i < moviesList.length; i++) {
                     if (displayedCount >= 8) break;
@@ -1620,18 +1698,25 @@
                         }
 
                         if (searchData.results?.length > 0) {
-                        let tmdbMovie = null;
-                        for (let res of searchData.results) {
-                            if (!isMovieInList(res, watchedMovies) && !isMovieInList(res, favorites)) {
-                                tmdbMovie = res;
-                                break;
+                            let tmdbMovie = null;
+                            let hasSeenCandidate = false;
+                            for (let res of searchData.results) {
+                                if (isMovieInList(res, watchedMovies) || isMovieInList(res, favorites)) {
+                                    hasSeenCandidate = true;
+                                } else {
+                                    tmdbMovie = res;
+                                    break;
+                                }
                             }
-                        }
-                        if (!tmdbMovie) continue; // Skip to next movie if all options are in lists
+                            if (!tmdbMovie) {
+                                if (hasSeenCandidate) actualSeenCount++;
+                                continue;
+                            }
 
-
-                            if (isMovieInList(tmdbMovie, watchedMovies)) continue;
-                            if (isMovieInList(tmdbMovie, favorites)) continue;
+                            if (isMovieInList(tmdbMovie, watchedMovies) || isMovieInList(tmdbMovie, favorites)) {
+                                actualSeenCount++;
+                                continue;
+                            }
                             if (currentSearchState.shownIds.includes(tmdbMovie.id)) continue;
 
                             const detailsRes = await fetch(`https://api.themoviedb.org/3/movie/${tmdbMovie.id}?api_key=${TMDB_KEY}&language=uk-UA`);
@@ -1652,13 +1737,16 @@
 
                             const isFav = favorites.some(fav => (fav.id || fav.imdbID) == data.id);
                             const isWatched = false; 
-                            const storageStr = encodeURIComponent(JSON.stringify({ id: data.id, title_ua: m.title_ua, title_en: m.title_en, year: releaseYear, poster: posterUrl })).replace(/'/g, '%27');
+                            const storageStr = encodeURIComponent(JSON.stringify({ id: data.id, title_ua: (data.title && data.title.trim() !== "") ? data.title : m.title_ua, title_en: m.title_en, year: releaseYear, genre: firstGenre, rating: rating, poster: posterUrl, plot: finalPlot })).replace(/'/g, '%27');
 
                             const cardHtml = generateMovieCardHtml(data.id, startIndex + displayedCount, (data.title && data.title.trim() !== "") ? data.title : m.title_ua, releaseYear, firstGenre, posterUrl, rating, storageStr, isFav, isWatched);
                             if (skeletonCards[displayedCount]) skeletonCards[displayedCount].outerHTML = cardHtml;
                             displayedCount++;
                         }
-                    } catch (err) { console.error(err); }
+                    } catch (err) { 
+                        tmdbErrorsCount++;
+                        console.error(err); 
+                    }
                 }
 
                 for (let i = displayedCount; i < skeletonCards.length; i++) {
@@ -1666,34 +1754,33 @@
                 }
 
                 let skippedAlreadySeen = moviesList.length - displayedCount - tmdbErrorsCount - skippedByYear;
-                    if (tmdbErrorsCount >= Math.min(moviesList.length, 5)) {
-                        throw new Error("Забагато помилок мережі з TMDB. Спробуй відправити запит ще раз.");
-                    }
-                    if (!appendMode && skippedByYear > 0 && skippedByYear >= (moviesList.length - tmdbErrorsCount - skippedAlreadySeen)) {
-                        resultsGrid.innerHTML = `
-                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
-                                <div class="text-7xl mb-4 text-center">⏳</div>
-                                <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Епоха не та...</h3>
-                                <p class="text-slate-300 text-center max-w-md mb-2">У ${minYear}–${maxYear} нічого нового, розшир епоху!</p>
-                            </div>`;
-                        loadMoreContainer.classList.add('hidden');
-                    } else if (!appendMode && skippedAlreadySeen > 0 && skippedAlreadySeen >= (moviesList.length - tmdbErrorsCount - skippedByYear)) {
-                        resultsGrid.innerHTML = `
-                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
-                                <div class="text-7xl mb-4 text-center">🎬</div>
-                                <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Ти вже все бачила!</h3>
-                                <p class="text-slate-300 text-center max-w-md mb-2">Ми знайшли фільми, але вони вже є у твоєму списку переглянутих або збережених.</p>
-                            </div>`;
-                        loadMoreContainer.classList.add('hidden');
-                    } else if (!appendMode && displayedCount === 0) {
-                        resultsGrid.innerHTML = `
-                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
-                                <div class="text-7xl mb-4 text-center">🤯🎬</div>
-                                <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Оце так кіноман!</h3>
-                                <p class="text-slate-300 text-center max-w-md mb-2">Ти вже бачила абсолютно всі фільми, які зараз спали на думку зіркам.</p>
-                                <p class="text-slate-500 text-sm mb-8 text-center italic">Спробуй змінити жанр або написати щось інше в запиті.</p>
-                            </div>`;
-                        loadMoreContainer.classList.add('hidden');
+                if (tmdbErrorsCount >= Math.min(moviesList.length, 5)) {
+                    throw new Error("Забагато помилок мережі з TMDB. Спробуй відправити запит ще раз.");
+                }
+                if (!appendMode && skippedByYear > 0 && skippedByYear >= (moviesList.length - tmdbErrorsCount - skippedAlreadySeen)) {
+                    resultsGrid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
+                            <div class="text-7xl mb-4 text-center">⏳</div>
+                            <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Епоха не та...</h3>
+                            <p class="text-slate-300 text-center max-w-md mb-2">У ${minYear}–${maxYear} нічого нового, розшир епоху!</p>
+                        </div>`;
+                    loadMoreContainer.classList.add('hidden');
+                } else if (!appendMode && actualSeenCount > 0 && displayedCount === 0) {
+                    resultsGrid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
+                            <div class="text-7xl mb-4 text-center">🎬</div>
+                            <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Ти вже все бачила!</h3>
+                            <p class="text-slate-300 text-center max-w-md mb-2">Ми знайшли фільми, але вони вже є у твоєму списку переглянутих або збережених.</p>
+                        </div>`;
+                    loadMoreContainer.classList.add('hidden');
+                } else if (!appendMode && displayedCount === 0) {
+                    resultsGrid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16 px-4 movie-card-anim">
+                            <div class="text-7xl mb-4 text-center">🔍✨</div>
+                            <h3 class="text-3xl md:text-4xl gradient-text font-bold mb-4 text-center leading-tight">Нічого не знайшлося...</h3>
+                            <p class="text-slate-300 text-center max-w-md mb-2">Зірки не змогли підібрати фільми за цим запитом. Спробуй перефразувати або обрати інший настрій!</p>
+                        </div>`;
+                    loadMoreContainer.classList.add('hidden');
                     } else if (displayedCount > 0) {
                     const allShownMovies = appendMode
                         ? [...safeParseJSON('ani_last_results', []), ...finalFetchedMovies]
@@ -1840,6 +1927,7 @@
         }
 
         loadMovieOfTheDay();
+        backfillSaved().catch(console.error);
 
         function showSeasonalBanner() {
             const now = new Date();
@@ -1875,7 +1963,8 @@
             const allCards = Array.from(resultsGrid.querySelectorAll('.movie-card'));
             const cards = Array.from(resultsGrid.querySelectorAll('.movie-card:not(.grayscale)'));
             if (cards.length === 0) { 
-                if (allCards.length > 0) showToast("Всі ці фільми ти вже бачив! Завантаж ще.");
+                isSpinning = false;
+                if (allCards.length > 0) showToast("Всі ці фільми ти вже бачила! Завантаж ще.");
                 else showToast("Спочатку знайди фільми");
                 return; 
             }
@@ -1906,6 +1995,7 @@
                     setTimeout(() => {
                         const movieId = cards[winnerIndex].id.replace('movie-card-', '');
                         openMovieModal(parseInt(movieId));
+                        isSpinning = false;
                         setTimeout(() => cards[winnerIndex].classList.remove('roulette-winner'), 500);
                     }, 2000);
 
@@ -1918,12 +2008,12 @@
         function searchByTaste() {
             const totalMovies = favorites.length + watchedMovies.length;
             if (totalMovies < 3) {
-                showToast("Додай щонайменше 3 фільми у ❤️ або 👀, щоб я зрозумів(ла) твій смак!");
+                showToast("Додай щонайменше 3 фільми у ❤️ або 👀, щоб я краще зрозумів твій смак!");
                 return;
             }
             const profile = getUserTasteProfile();
             if (!profile || profile.recentTitles.length === 0) {
-                showToast("Додай щонайменше 3 фільми у ❤️ або 👀, щоб я зрозумів(ла) твій смак!");
+                showToast("Додай щонайменше 3 фільми у ❤️ або 👀, щоб я краще зрозумів твій смак!");
                 return;
             }
 
@@ -1963,14 +2053,14 @@
                 let changed = false;
                 for (let i = 0; i < list.length; i++) {
                     const item = list[i];
-                    if (!item.genre || !item.rating || item.genre === 'РљС–РЅРѕ' || item.rating === 'N/A') {
+                    if (!item.genre || !item.rating || item.genre === 'Кіно' || item.genre === 'РљС–РЅРѕ' || item.rating === 'N/A') {
                         try {
                             const idToFetch = item.id || item.imdbID;
                             if (!idToFetch) continue;
                             const detailsRes = await fetch(`https://api.themoviedb.org/3/movie/${idToFetch}?api_key=${TMDB_KEY}&language=uk-UA`);
                             if (detailsRes.ok) {
                                 const data = await detailsRes.json();
-                                item.genre = data.genres?.length > 0 ? data.genres[0].name : 'РљС–РЅРѕ';
+                                item.genre = data.genres?.length > 0 ? data.genres[0].name : 'Кіно';
                                 item.rating = data.vote_average?.toFixed(1) || 'N/A';
                                 changed = true;
                             }
@@ -2048,8 +2138,19 @@
                 if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error("Invalid");
 
                 const validateMovie = (m) => {
-                    return m && typeof m === 'object' && 'id' in m && 'title_ua' in m && 'title_en' in m && 'year' in m && 'genre' in m && 'rating' in m && 'plot' in m && 'poster' in m;
+                    return m && typeof m === 'object' && ('id' in m || 'imdbID' in m) && ('title_ua' in m || 'title_en' in m) && 'poster' in m;
                 };
+
+                const normalizeMovie = (m) => ({
+                    id: m.id || m.imdbID,
+                    title_ua: m.title_ua || m.title_en || 'Фільм',
+                    title_en: m.title_en || m.title_ua || 'Movie',
+                    year: m.year || 'N/A',
+                    genre: m.genre || 'Кіно',
+                    rating: m.rating != null ? String(m.rating) : '—',
+                    poster: m.poster,
+                    plot: m.plot || ''
+                });
 
                 const validatePoster = (url) => {
                     if (typeof url !== 'string') return false;
@@ -2066,7 +2167,7 @@
                 let importedAny = false;
 
                 if (rawFavs) {
-                    const validFavs = rawFavs.filter(m => validateMovie(m) && validatePoster(m.poster));
+                    const validFavs = rawFavs.filter(m => validateMovie(m) && validatePoster(m.poster)).map(normalizeMovie);
                     if (validFavs.length > 0) importedAny = true;
                     localStorage.setItem('ani_movie_favorites', JSON.stringify(validFavs));
                     favorites = validFavs;
@@ -2074,7 +2175,7 @@
                 }
                 
                 if (rawWatched) {
-                    const validWatched = rawWatched.filter(m => validateMovie(m) && validatePoster(m.poster));
+                    const validWatched = rawWatched.filter(m => validateMovie(m) && validatePoster(m.poster)).map(normalizeMovie);
                     if (validWatched.length > 0) importedAny = true;
                     localStorage.setItem('ani_movie_watched', JSON.stringify(validWatched));
                     watchedMovies = validWatched;

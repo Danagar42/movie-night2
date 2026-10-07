@@ -1,4 +1,4 @@
-const CACHE_NAME = 'movie-night-v5';
+const CACHE_NAME = 'movie-night-v6';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -7,7 +7,19 @@ const STATIC_ASSETS = [
     './icons/icon-180.png',
     './icons/icon-192.png',
     './icons/icon-512.png',
-    './icons/no-poster.svg'
+    './icons/no-poster.svg',
+    './assets/dogs/philip-1.png',
+    './assets/dogs/philip-2.png',
+    './assets/dogs/philip-3.png',
+    './assets/dogs/philip-4.png',
+    './assets/dogs/philip-5.png',
+    './assets/dogs/philip-6.png',
+    './assets/dogs/philip-7.png',
+    './assets/dogs/philip-8.png',
+    './assets/dogs/philip-9.png',
+    './assets/dogs/philip-10.png',
+    './assets/dogs/philip-11.png',
+    './assets/dogs/philip-12.png'
 ];
 
 self.addEventListener('install', (event) => {
